@@ -33,7 +33,12 @@
     "extra": {
       "category": "Games",
       "subCategory": "Puzzle",
-      "ageRating": "3+"
+      "ageRating": "3+",
+      "privacyPolicyUrl": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/privacy-policy.md",
+      "termsOfServiceUrl": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/terms-of-service.md",
+      "supportEmail": "support@szrgame.com",
+      "developerName": "SZR Game Studios",
+      "developerWebsite": "https://github.com/szrshine/ColorDrop"
     }
   }
 }

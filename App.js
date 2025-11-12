@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -250,6 +251,20 @@ export default function App() {
     }
   };
 
+  // Link açma fonksiyonu
+  const openLink = async (url) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        console.log("URL açılamıyor: " + url);
+      }
+    } catch (error) {
+      console.log('Link açılırken hata:', error);
+    }
+  };
+
   // Top bileşeni
   const Ball = ({ ball }) => {
     return (
@@ -293,6 +308,27 @@ export default function App() {
             <Text style={styles.instructionDetail}>• Yanlış renk veya kaçırma = oyun biter</Text>
             <Text style={styles.instructionDetail}>• Hız giderek artar!</Text>
           </View>
+
+          <View style={styles.legalLinks}>
+            <TouchableOpacity
+              onPress={() => openLink('https://github.com/szrshine/ColorDrop/blob/main/assets/legal/privacy-policy.md')}
+            >
+              <Text style={styles.legalLinkText}>Gizlilik Politikası</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalDivider}>•</Text>
+            <TouchableOpacity
+              onPress={() => openLink('https://github.com/szrshine/ColorDrop/blob/main/assets/legal/terms-of-service.md')}
+            >
+              <Text style={styles.legalLinkText}>Kullanım Şartları</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.supportLink}
+            onPress={() => openLink('mailto:support@szrgame.com')}
+          >
+            <Text style={styles.supportLinkText}>📧 Destek: support@szrgame.com</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -594,5 +630,34 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
+    marginBottom: 10,
+  },
+  legalLinkText: {
+    color: '#888',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  legalDivider: {
+    color: '#666',
+    fontSize: 12,
+    marginHorizontal: 10,
+  },
+  supportLink: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+  },
+  supportLinkText: {
+    color: '#888',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
