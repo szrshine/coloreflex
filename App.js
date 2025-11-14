@@ -10,11 +10,33 @@ import {
   Modal,
   ScrollView,
   Switch,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
+import {
+  initializeAdMob,
+  loadInterstitialAd,
+  showInterstitialAd,
+  isInterstitialReady,
+  loadRewardedAd,
+  showRewardedAd,
+  isRewardedAdReady,
+  initializeIAP,
+  loadProducts,
+  purchaseProduct,
+  restorePurchases,
+  hasRemovedAds,
+  hasPremiumSkins,
+  getAvailableProducts,
+  AdMobBanner,
+  BannerAdSize,
+  AD_UNIT_IDS,
+  IAP_PRODUCT_IDS,
+} from './monetization';
 
 const { width, height } = Dimensions.get('window');
 
@@ -212,7 +234,7 @@ const ACHIEVEMENTS_LIST = [
 ];
 
 export default function App() {
-  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats
+  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats, store, dailyTasks
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [balls, setBalls] = useState([]);
@@ -249,6 +271,16 @@ export default function App() {
   const [dailyTasks, setDailyTasks] = useState([]);
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
 
+  // Monetizasyon state'leri
+  const [coins, setCoins] = useState(0);
+  const [adsRemoved, setAdsRemoved] = useState(false);
+  const [premiumSkinsOwned, setPremiumSkinsOwned] = useState(false);
+  const [iapProducts, setIapProducts] = useState([]);
+  const [iapLoading, setIapLoading] = useState(false);
+  const [gamesPlayedSinceAd, setGamesPlayedSinceAd] = useState(0);
+  const [continueUsesToday, setContinueUsesToday] = useState(0);
+  const [countdown, setCountdown] = useState(0); // Devam etmeden önce geri sayım
+
   const gameLoop = useRef(null);
   const ballIdCounter = useRef(0);
   const spawnTimer = useRef(0);
@@ -269,6 +301,8 @@ export default function App() {
     checkFirstLaunch();
     checkDailyLogin();
     loadSounds();
+    initializeMonetization();
+    loadCoins();
 
     return () => {
       // Cleanup: ses dosyalarını unload et
@@ -461,6 +495,186 @@ export default function App() {
       console.log('Yüksek skor kaydedilirken hata:', error);
     }
   };
+
+  // ============ MONETİZASYON FONKSİYONLARI ============
+
+  // Coin sistemi
+  const loadCoins = async () => {
+    try {
+      const savedCoins = await AsyncStorage.getItem('coins');
+      if (savedCoins !== null) {
+        setCoins(parseInt(savedCoins));
+      }
+    } catch (error) {
+      console.log('Coin yüklenirken hata:', error);
+    }
+  };
+
+  const saveCoins = async (newCoins) => {
+    try {
+      await AsyncStorage.setItem('coins', newCoins.toString());
+      setCoins(newCoins);
+    } catch (error) {
+      console.log('Coin kaydedilirken hata:', error);
+    }
+  };
+
+  const addCoins = async (amount) => {
+    try {
+      // Mevcut coin değerini AsyncStorage'dan al (en güncel değer)
+      const savedCoins = await AsyncStorage.getItem('coins');
+      const currentCoins = savedCoins ? parseInt(savedCoins) : 0;
+      const newCoins = currentCoins + amount;
+      await saveCoins(newCoins);
+    } catch (error) {
+      console.log('Coin eklenirken hata:', error);
+    }
+  };
+
+  const spendCoins = async (amount) => {
+    if (coins >= amount) {
+      const newCoins = coins - amount;
+      await saveCoins(newCoins);
+      return true;
+    }
+    return false;
+  };
+
+  // Monetizasyon başlatma
+  const initializeMonetization = async () => {
+    // AdMob başlat
+    const adMobInitialized = await initializeAdMob();
+    if (adMobInitialized) {
+      loadInterstitialAd();
+      loadRewardedAd();
+    }
+
+    // IAP başlat
+    const iapCleanup = await initializeIAP();
+    if (iapCleanup) {
+      // IAP başarıyla başlatıldı
+      const products = await loadProducts();
+      setIapProducts(products);
+
+      // Satın alınmış ürünleri kontrol et
+      const removedAds = hasRemovedAds();
+      const premiumSkins = hasPremiumSkins();
+      setAdsRemoved(removedAds);
+      setPremiumSkinsOwned(premiumSkins);
+    }
+  };
+
+  // IAP fonksiyonları
+  const handlePurchase = async (productId) => {
+    try {
+      setIapLoading(true);
+      await purchaseProduct(productId);
+
+      // Satın alma başarılı
+      if (productId === IAP_PRODUCT_IDS.removeAds) {
+        setAdsRemoved(true);
+        Alert.alert('Başarılı!', 'Reklamlar kaldırıldı! 🎉');
+      } else if (productId === IAP_PRODUCT_IDS.premiumSkins) {
+        setPremiumSkinsOwned(true);
+        Alert.alert('Başarılı!', 'Premium skin paketi açıldı! 🎨');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackSmall) {
+        await addCoins(100);
+        Alert.alert('Başarılı!', '100 coin kazandınız! 💰');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackMedium) {
+        await addCoins(600);
+        Alert.alert('Başarılı!', '600 coin kazandınız! 💰');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackLarge) {
+        await addCoins(1500);
+        Alert.alert('Başarılı!', '1500 coin kazandınız! 💰');
+      }
+
+      triggerHaptic('success');
+      playSound(correctSound);
+    } catch (error) {
+      Alert.alert('Hata', 'Satın alma başarısız oldu. Lütfen tekrar deneyin.');
+      console.error('Purchase error:', error);
+    } finally {
+      setIapLoading(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      setIapLoading(true);
+      const purchases = await restorePurchases();
+
+      if (purchases.length > 0) {
+        // Satın alınanları kontrol et ve ayarla
+        const removedAds = hasRemovedAds();
+        const premiumSkins = hasPremiumSkins();
+        setAdsRemoved(removedAds);
+        setPremiumSkinsOwned(premiumSkins);
+
+        Alert.alert('Başarılı!', 'Satın almalarınız geri yüklendi! ✅');
+        triggerHaptic('success');
+      } else {
+        Alert.alert('Bilgi', 'Geri yüklenecek satın alma bulunamadı.');
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Satın almalar geri yüklenemedi.');
+      console.error('Restore error:', error);
+    } finally {
+      setIapLoading(false);
+    }
+  };
+
+  // Rewarded video ile devam etme
+  const handleContinueWithAd = () => {
+    if (continueUsesToday >= 3) {
+      Alert.alert('Limit Aşıldı', 'Bugün için devam etme hakkınız bitti. Yarın tekrar deneyin! 🕐');
+      return;
+    }
+
+    if (!isRewardedAdReady()) {
+      Alert.alert('Reklam Hazır Değil', 'Lütfen birkaç saniye bekleyin...');
+      return;
+    }
+
+    const success = showRewardedAd((earnedReward) => {
+      if (earnedReward) {
+        // Oyuna devam et
+        setContinueUsesToday(continueUsesToday + 1);
+        // 3 saniye geri sayım başlat
+        setCountdown(3);
+        setGameState('playing');
+        triggerHaptic('success');
+      } else {
+        Alert.alert('İptal', 'Reklam izlenmedi, oyuna devam edilemedi.');
+      }
+    });
+
+    if (!success) {
+      Alert.alert('Hata', 'Reklam gösterilemedi. Lütfen tekrar deneyin.');
+    }
+  };
+
+  // Rewarded video ile coin kazanma
+  const handleWatchAdForCoins = () => {
+    if (!isRewardedAdReady()) {
+      Alert.alert('Reklam Hazır Değil', 'Lütfen birkaç saniye bekleyin...');
+      return;
+    }
+
+    const success = showRewardedAd((earnedReward) => {
+      if (earnedReward) {
+        addCoins(25);
+        triggerHaptic('success');
+        playSound(correctSound);
+        Alert.alert('Harika!', '25 coin kazandınız! 💰');
+      }
+    });
+
+    if (!success) {
+      Alert.alert('Hata', 'Reklam gösterilemedi.');
+    }
+  };
+
+  // ============ MONETİZASYON FONKSİYONLARI BİTİŞ ============
 
   // İstatistikleri yükle
   const loadStats = async () => {
@@ -843,9 +1057,20 @@ export default function App() {
     });
   };
 
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+        triggerHaptic('light');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
   // Ana oyun döngüsü
   useEffect(() => {
-    if (gameState === 'playing' && !settingsVisible) {
+    if (gameState === 'playing' && !settingsVisible && countdown === 0) {
       gameLoop.current = setInterval(() => {
         setBalls((prevBalls) => {
           const updatedBalls = prevBalls.map((ball) => {
@@ -920,7 +1145,7 @@ export default function App() {
         }
       };
     }
-  }, [gameState, speed, settingsVisible]);
+  }, [gameState, speed, settingsVisible, countdown]);
 
   // Top yakalama ve yönlendirme
   const directBall = (ballId, targetColorId, boxIndex) => {
@@ -1061,6 +1286,23 @@ export default function App() {
     updateDailyTask('play_5', newTotalGames % 1000); // Bugünkü oyun sayısı
     if (score >= 25) {
       updateDailyTask('score_25', 25);
+    }
+
+    // Coin kazandır (puana göre)
+    await addCoins(score);
+
+    // Interstitial reklam göster (her 3-4 oyunda bir, reklamsız değilse)
+    const newGamesCount = gamesPlayedSinceAd + 1;
+    setGamesPlayedSinceAd(newGamesCount);
+
+    if (!adsRemoved && newGamesCount >= 3) {
+      // Reklam göster
+      setTimeout(() => {
+        if (isInterstitialReady()) {
+          showInterstitialAd();
+          setGamesPlayedSinceAd(0);
+        }
+      }, 1000); // 1 saniye gecikme (Game Over ekranı görünsün)
     }
   };
 
@@ -1277,6 +1519,212 @@ export default function App() {
                 </View>
               ))
             )}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
+  // Mağaza ekranı
+  if (gameState === 'store') {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <View style={styles.storeContainer}>
+          <View style={styles.storeHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                triggerHaptic('light');
+                setGameState('menu');
+              }}
+            >
+              <Text style={styles.backButtonText}>← Geri</Text>
+            </TouchableOpacity>
+            <Text style={styles.storeTitle}>🛒 Mağaza</Text>
+            <View style={styles.coinIndicatorSmall}>
+              <Text style={styles.coinIconSmall}>💰</Text>
+              <Text style={styles.coinTextSmall}>{coins}</Text>
+            </View>
+          </View>
+
+          <ScrollView style={styles.storeList} showsVerticalScrollIndicator={false}>
+            {/* Reklam İzle - Coin Kazan */}
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>📺</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Reklam İzle</Text>
+                  <Text style={styles.storeCardDescription}>25 coin kazan</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.storeWatchAdButton}
+                onPress={() => {
+                  triggerHaptic('medium');
+                  handleWatchAdForCoins();
+                }}
+              >
+                <Text style={styles.storeWatchAdButtonText}>İZLE</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Reklamsız Versiyon */}
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>🚫</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Reklamsız Versiyon</Text>
+                  <Text style={styles.storeCardDescription}>
+                    Tüm reklamları kaldır
+                  </Text>
+                </View>
+              </View>
+              {adsRemoved ? (
+                <View style={styles.storePurchasedBadge}>
+                  <Text style={styles.storePurchasedText}>✓ Satın Alındı</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.storeBuyButton}
+                  onPress={() => {
+                    triggerHaptic('medium');
+                    handlePurchase(IAP_PRODUCT_IDS.removeAds);
+                  }}
+                  disabled={iapLoading}
+                >
+                  {iapLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.storeBuyButtonText}>$2.99</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Premium Skin Paketi */}
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>🎨</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Premium Skin Paketi</Text>
+                  <Text style={styles.storeCardDescription}>
+                    10 özel top skini + 5 tema
+                  </Text>
+                </View>
+              </View>
+              {premiumSkinsOwned ? (
+                <View style={styles.storePurchasedBadge}>
+                  <Text style={styles.storePurchasedText}>✓ Satın Alındı</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.storeBuyButton}
+                  onPress={() => {
+                    triggerHaptic('medium');
+                    handlePurchase(IAP_PRODUCT_IDS.premiumSkins);
+                  }}
+                  disabled={iapLoading}
+                >
+                  {iapLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.storeBuyButtonText}>$1.99</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Coin Paketleri */}
+            <Text style={styles.storeSectionTitle}>💰 Coin Paketleri</Text>
+
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>💵</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Küçük Paket</Text>
+                  <Text style={styles.storeCardDescription}>100 coin</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.storeBuyButton}
+                onPress={() => {
+                  triggerHaptic('medium');
+                  handlePurchase(IAP_PRODUCT_IDS.coinPackSmall);
+                }}
+                disabled={iapLoading}
+              >
+                {iapLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.storeBuyButtonText}>$0.99</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>💴</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Orta Paket</Text>
+                  <Text style={styles.storeCardDescription}>600 coin</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.storeBuyButton}
+                onPress={() => {
+                  triggerHaptic('medium');
+                  handlePurchase(IAP_PRODUCT_IDS.coinPackMedium);
+                }}
+                disabled={iapLoading}
+              >
+                {iapLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.storeBuyButtonText}>$4.99</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>💸</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Büyük Paket</Text>
+                  <Text style={styles.storeCardDescription}>1500 coin</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.storeBuyButton}
+                onPress={() => {
+                  triggerHaptic('medium');
+                  handlePurchase(IAP_PRODUCT_IDS.coinPackLarge);
+                }}
+                disabled={iapLoading}
+              >
+                {iapLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.storeBuyButtonText}>$9.99</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Satın Almaları Geri Yükle */}
+            <TouchableOpacity
+              style={styles.restorePurchasesButton}
+              onPress={() => {
+                triggerHaptic('light');
+                handleRestorePurchases();
+              }}
+              disabled={iapLoading}
+            >
+              <Text style={styles.restorePurchasesText}>
+                🔄 Satın Almaları Geri Yükle
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </View>
       </View>
@@ -1528,6 +1976,12 @@ export default function App() {
       <View style={styles.container}>
         <StatusBar style="light" />
 
+        {/* Coin göstergesi - sol üst köşe */}
+        <View style={styles.coinIndicator}>
+          <Text style={styles.coinIcon}>💰</Text>
+          <Text style={styles.coinText}>{coins}</Text>
+        </View>
+
         {/* Ayarlar butonu - sağ üst köşe */}
         <TouchableOpacity
           style={styles.settingsIconButton}
@@ -1572,6 +2026,16 @@ export default function App() {
                 }}
               >
                 <Text style={styles.menuSecondaryButtonText}>📋 Günlük Görevler</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuSecondaryButton}
+                onPress={() => {
+                  triggerHaptic('light');
+                  setGameState('store');
+                }}
+              >
+                <Text style={styles.menuSecondaryButtonText}>🛒 Mağaza</Text>
               </TouchableOpacity>
             </View>
 
@@ -1671,6 +2135,22 @@ export default function App() {
             <Text style={styles.bestScoreValue}>{highScore}</Text>
           </View>
 
+          {/* Coin kazanma bilgisi */}
+          <View style={styles.coinEarnedInfo}>
+            <Text style={styles.coinEarnedText}>💰 +{score} coin kazandınız!</Text>
+          </View>
+
+          {/* Rewarded Video - Devam Et */}
+          {continueUsesToday < 3 && isRewardedAdReady() && (
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleContinueWithAd}
+            >
+              <Text style={styles.continueButtonText}>📺 Reklam İzle ve Devam Et</Text>
+              <Text style={styles.continueButtonSubtext}>({3 - continueUsesToday} hak kaldı)</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity style={styles.restartButton} onPress={startGame}>
             <Text style={styles.restartButtonText}>🔄 Tekrar Oyna</Text>
           </TouchableOpacity>
@@ -1727,6 +2207,14 @@ export default function App() {
         {particles.map((particle) => (
           <Particle key={particle.id} particle={particle} />
         ))}
+
+        {/* Countdown overlay */}
+        {countdown > 0 && (
+          <View style={styles.countdownOverlay}>
+            <Text style={styles.countdownText}>{countdown}</Text>
+            <Text style={styles.countdownSubtext}>Hazırlan!</Text>
+          </View>
+        )}
       </View>
 
       {/* Renkli kutular */}
@@ -1750,6 +2238,19 @@ export default function App() {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Banner Reklam - Sadece reklamsız değilse göster */}
+      {!adsRemoved && (
+        <View style={styles.bannerAdContainer}>
+          <AdMobBanner
+            unitId={AD_UNIT_IDS.banner}
+            size={BannerAdSize.BANNER}
+            requestOptions={{
+              requestNonPersonalizedAdsOnly: true,
+            }}
+          />
+        </View>
+      )}
 
       {/* Başarım bildirimleri */}
       {unlockedAchievements.map((achievement, index) => (
@@ -2166,6 +2667,34 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#16213e',
   },
+  countdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 1000,
+  },
+  countdownText: {
+    fontSize: 120,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 5,
+  },
+  countdownSubtext: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
   ball: {
     position: 'absolute',
     width: BALL_SIZE,
@@ -2284,16 +2813,18 @@ const styles = StyleSheet.create({
   },
   // Yeni menü butonları
   menuButtons: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: 10,
     marginBottom: 20,
+    width: '90%',
   },
   menuSecondaryButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 15,
     borderRadius: 20,
-    marginHorizontal: 5,
+    width: '100%',
+    alignItems: 'center',
   },
   menuSecondaryButtonText: {
     color: '#fff',
@@ -2598,5 +3129,195 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#FF3B30',
+  },
+  // Monetizasyon stilleri
+  coinIndicator: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 204, 0, 0.2)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    zIndex: 1000,
+  },
+  coinIcon: {
+    fontSize: 20,
+    marginRight: 5,
+  },
+  coinText: {
+    color: '#FFCC00',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  coinIndicatorSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 204, 0, 0.2)',
+    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  coinIconSmall: {
+    fontSize: 16,
+    marginRight: 4,
+  },
+  coinTextSmall: {
+    color: '#FFCC00',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  bannerAdContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    zIndex: 100,
+    elevation: 100, // Android için
+  },
+  coinEarnedInfo: {
+    backgroundColor: 'rgba(255, 204, 0, 0.2)',
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  coinEarnedText: {
+    color: '#FFCC00',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  continueButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  continueButtonSubtext: {
+    color: '#ccc',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  // Mağaza stilleri
+  storeContainer: {
+    flex: 1,
+    paddingTop: 50,
+  },
+  storeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  storeTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  storeList: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  storeCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  storeCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  storeCardIcon: {
+    fontSize: 40,
+    marginRight: 15,
+  },
+  storeCardInfo: {
+    flex: 1,
+  },
+  storeCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  storeCardDescription: {
+    fontSize: 14,
+    color: '#aaa',
+  },
+  storeBuyButton: {
+    backgroundColor: '#34C759',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  storeBuyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  storeWatchAdButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  storeWatchAdButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  storePurchasedBadge: {
+    backgroundColor: 'rgba(52, 199, 89, 0.2)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  storePurchasedText: {
+    color: '#34C759',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  storeSectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  restorePurchasesButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  restorePurchasesText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
