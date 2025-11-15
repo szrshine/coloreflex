@@ -1,0 +1,1695 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+  Linking,
+  Modal,
+  ScrollView,
+  Switch,
+  ActivityIndicator,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
+import * as Haptics from 'expo-haptics';
+import {
+  initializeAdMob,
+  loadInterstitialAd,
+  showInterstitialAd,
+  isInterstitialReady,
+  loadRewardedAd,
+  showRewardedAd,
+  isRewardedAdReady,
+  initializeIAP,
+  loadProducts,
+  purchaseProduct,
+  restorePurchases,
+  hasRemovedAds,
+  hasPremiumSkins,
+  getAvailableProducts,
+  AdMobBanner,
+  BannerAdSize,
+  AD_UNIT_IDS,
+  IAP_PRODUCT_IDS,
+} from './monetization';
+import { COLORS } from './src/constants/colors';
+import { SKINS } from './src/constants/skins';
+import { POWERUPS } from './src/constants/powerups';
+import { ACHIEVEMENTS_LIST } from './src/constants/achievements';
+import { privacyPolicyText, termsOfServiceText } from './src/constants/legalText';
+import { BALL_SIZE, INITIAL_SPEED, SPEED_INCREMENT } from './src/constants/gameConfig';
+
+// Screen Components
+import MenuScreen from './src/screens/MenuScreen';
+import GameScreen from './src/screens/GameScreen';
+import GameOverScreen from './src/screens/GameOverScreen';
+import TutorialScreen from './src/screens/TutorialScreen';
+import SkinsScreen from './src/screens/SkinsScreen';
+import PowerupsScreen from './src/screens/PowerupsScreen';
+import AchievementsScreen from './src/screens/AchievementsScreen';
+import DailyTasksScreen from './src/screens/DailyTasksScreen';
+import StoreScreen from './src/screens/StoreScreen';
+
+// Game Components
+import Ball from './src/components/game/Ball';
+import Particle from './src/components/game/Particle';
+
+// UI Components
+import SettingsModal from './src/components/ui/SettingsModal';
+
+const { width, height } = Dimensions.get('window');
+
+export default function App() {
+  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats, store, dailyTasks
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [balls, setBalls] = useState([]);
+  const [speed, setSpeed] = useState(INITIAL_SPEED);
+  const [particles, setParticles] = useState([]); // Parçacık efektleri için
+  // İlk değer: Manuel hesaplama (toplar için), sonra onLayout ile gerçek değer güncellenecek
+  const [boxContainerY, setBoxContainerY] = useState(height - 160 - 95); // scoreBar(95) çıkarılmış
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalContent, setModalContent] = useState('');
+  const [modalTitle, setModalTitle] = useState('');
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false); // Ayarlar modal
+  const [previousGameState, setPreviousGameState] = useState('menu'); // Ayarlar öncesi state
+
+  // Ayarlar state'leri
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
+
+  // İstatistikler state'leri
+  const [totalGamesPlayed, setTotalGamesPlayed] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [totalCorrectMatches, setTotalCorrectMatches] = useState(0);
+  const [totalWrongMatches, setTotalWrongMatches] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+
+  // Başarımlar state'leri
+  const [achievements, setAchievements] = useState({});
+  const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+  const [sessionAchievements, setSessionAchievements] = useState([]); // Bu oyun oturumunda kazanılan başarımlar
+
+  // Günlük görevler ve ödüller
+  const [dailyLoginStreak, setDailyLoginStreak] = useState(0);
+  const [lastLoginDate, setLastLoginDate] = useState('');
+  const [dailyTasks, setDailyTasks] = useState([]);
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
+  // Monetizasyon state'leri
+  const [coins, setCoins] = useState(0);
+  const [adsRemoved, setAdsRemoved] = useState(false);
+  const [premiumSkinsOwned, setPremiumSkinsOwned] = useState(false);
+  const [iapProducts, setIapProducts] = useState([]);
+  const [iapLoading, setIapLoading] = useState(false);
+  const [gamesPlayedSinceAd, setGamesPlayedSinceAd] = useState(0);
+  const [continueUsesToday, setContinueUsesToday] = useState(0);
+  const [countdown, setCountdown] = useState(0); // Devam etmeden önce geri sayım
+
+  // Skin state'leri
+  const [selectedSkin, setSelectedSkin] = useState('default');
+  const [ownedSkins, setOwnedSkins] = useState(['default']);
+
+  // Power-up state'leri
+  const [powerupInventory, setPowerupInventory] = useState({
+    slowmotion: 0,
+    shield: 0,
+    freeze: 0,
+  });
+  const [activePowerup, setActivePowerup] = useState(null);
+  const [shieldActive, setShieldActive] = useState(false);
+  const shieldActiveRef = useRef(false); // Shield'ın gerçek zamanlı durumu
+  const shieldUsedBallsRef = useRef(new Set()); // Shield ile kaldırılan topların ID'lerini sakla
+  const powerupTimeoutRef = useRef(null);
+  const [powerupPurchasePopup, setPowerupPurchasePopup] = useState({ visible: false, message: '' });
+  const powerupPopupTimeoutRef = useRef(null);
+  const [shopPurchasePopup, setShopPurchasePopup] = useState({ visible: false, message: '' });
+  const shopPopupTimeoutRef = useRef(null);
+
+  const gameLoop = useRef(null);
+  const ballIdCounter = useRef(0);
+  const spawnTimer = useRef(0);
+  const particleIdCounter = useRef(0);
+
+  // Ses efektleri refs
+  const correctSound = useRef(null);
+  const wrongSound = useRef(null);
+  const clickSound = useRef(null);
+  const backgroundMusic = useRef(null);
+
+  // İlk yükleme - yüksek skor ve ayarları yükle
+  useEffect(() => {
+    loadHighScore();
+    loadSettings();
+    loadStats();
+    loadAchievements();
+    checkFirstLaunch();
+    checkDailyLogin();
+    loadSounds();
+    initializeMonetization();
+    loadCoins();
+    loadSkins();
+    loadPowerups();
+
+    return () => {
+      // Cleanup: ses dosyalarını unload et
+      if (correctSound.current) correctSound.current.unloadAsync();
+      if (wrongSound.current) wrongSound.current.unloadAsync();
+      if (clickSound.current) clickSound.current.unloadAsync();
+      if (backgroundMusic.current) backgroundMusic.current.unloadAsync();
+    };
+  }, []);
+
+  // Başarımlar ekranına her girişte başarımları yeniden yükle
+  useEffect(() => {
+    if (gameState === 'achievements') {
+      loadAchievements();
+    }
+  }, [gameState]);
+
+  // İlk açılış kontrolü
+  const checkFirstLaunch = async () => {
+    try {
+      const hasSeenTutorial = await AsyncStorage.getItem('hasSeenTutorial');
+      if (!hasSeenTutorial) {
+        setShowTutorial(true);
+        setGameState('tutorial');
+      }
+    } catch (error) {
+    }
+  };
+
+  // Ses dosyalarını yükle
+  const loadSounds = async () => {
+    try {
+      const { sound: correct } = await Audio.Sound.createAsync(
+        require('./assets/sounds/correct.mp3')
+      );
+      correctSound.current = correct;
+
+      const { sound: wrong } = await Audio.Sound.createAsync(
+        require('./assets/sounds/wrong.mp3')
+      );
+      wrongSound.current = wrong;
+
+      // Click sesi opsiyonel - yoksa hata vermesin
+      try {
+        const { sound: click } = await Audio.Sound.createAsync(
+          require('./assets/sounds/click.mp3')
+        );
+        clickSound.current = click;
+      } catch (e) {
+      }
+
+      const { sound: music } = await Audio.Sound.createAsync(
+        require('./assets/sounds/background.mp3'),
+        { isLooping: true, shouldPlay: false, volume: 0.6 }
+      );
+      backgroundMusic.current = music;
+
+    } catch (error) {
+    }
+  };
+
+  // Ses çal fonksiyonu
+  const playSound = async (soundRef) => {
+    if (!soundEnabled || !soundRef.current) return;
+
+    try {
+      await soundRef.current.replayAsync();
+    } catch (error) {
+    }
+  };
+
+  // Müzik kontrol
+  useEffect(() => {
+    const controlMusic = async () => {
+      if (!backgroundMusic.current) return;
+
+      try {
+        if (musicEnabled && gameState === 'playing' && !settingsVisible) {
+          const status = await backgroundMusic.current.getStatusAsync();
+          if (!status.isLoaded) {
+            return;
+          }
+          if (!status.isPlaying) {
+            await backgroundMusic.current.playAsync();
+          }
+        } else {
+          const status = await backgroundMusic.current.getStatusAsync();
+          if (status.isLoaded && status.isPlaying) {
+            await backgroundMusic.current.pauseAsync();
+          }
+        }
+      } catch (error) {
+      }
+    };
+
+    controlMusic();
+  }, [musicEnabled, gameState, settingsVisible]);
+
+  // Haptic feedback fonksiyonu
+  const triggerHaptic = (type = 'light') => {
+    if (!hapticEnabled) return;
+
+    try {
+      switch (type) {
+        case 'light':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          break;
+        case 'medium':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          break;
+        case 'heavy':
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          break;
+        case 'success':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          break;
+        case 'error':
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          break;
+      }
+    } catch (error) {
+    }
+  };
+
+  // Ayarları yükle
+  const loadSettings = async () => {
+    try {
+      const settings = await AsyncStorage.multiGet([
+        'soundEnabled',
+        'musicEnabled',
+        'hapticEnabled'
+      ]);
+
+      settings.forEach(([key, value]) => {
+        if (value !== null) {
+          const boolValue = value === 'true';
+          if (key === 'soundEnabled') setSoundEnabled(boolValue);
+          if (key === 'musicEnabled') setMusicEnabled(boolValue);
+          if (key === 'hapticEnabled') setHapticEnabled(boolValue);
+        }
+      });
+    } catch (error) {
+    }
+  };
+
+  // Ayarları kaydet
+  const saveSetting = useCallback(async (key, value) => {
+    try {
+      await AsyncStorage.setItem(key, value.toString());
+    } catch (error) {
+    }
+  }, []);
+
+  const loadHighScore = async () => {
+    try {
+      const savedHighScore = await AsyncStorage.getItem('highScore');
+      if (savedHighScore !== null) {
+        setHighScore(parseInt(savedHighScore));
+      }
+    } catch (error) {
+    }
+  };
+
+  const saveHighScore = async (newScore) => {
+    try {
+      if (newScore > highScore) {
+        await AsyncStorage.setItem('highScore', newScore.toString());
+        setHighScore(newScore);
+        // Yeni rekor haptic ve ses efekti
+        triggerHaptic('success');
+        playSound(correctSound);
+      }
+    } catch (error) {
+    }
+  };
+
+  // ============ MONETİZASYON FONKSİYONLARI ============
+
+  // Coin sistemi
+  const loadCoins = async () => {
+    try {
+      const savedCoins = await AsyncStorage.getItem('coins');
+      if (savedCoins !== null) {
+        setCoins(parseInt(savedCoins));
+      }
+    } catch (error) {
+    }
+  };
+
+  const saveCoins = async (newCoins) => {
+    try {
+      await AsyncStorage.setItem('coins', newCoins.toString());
+      setCoins(newCoins);
+    } catch (error) {
+    }
+  };
+
+  const addCoins = async (amount) => {
+    try {
+      // Mevcut coin değerini AsyncStorage'dan al (en güncel değer)
+      const savedCoins = await AsyncStorage.getItem('coins');
+      const currentCoins = savedCoins ? parseInt(savedCoins) : 0;
+      const newCoins = currentCoins + amount;
+      await saveCoins(newCoins);
+    } catch (error) {
+    }
+  };
+
+  const spendCoins = async (amount) => {
+    if (coins >= amount) {
+      const newCoins = coins - amount;
+      await saveCoins(newCoins);
+      return true;
+    }
+    return false;
+  };
+
+  // Skin yükleme ve kaydetme
+  const loadSkins = async () => {
+    try {
+      const savedSkin = await AsyncStorage.getItem('selectedSkin');
+      if (savedSkin) setSelectedSkin(savedSkin);
+
+      const savedOwnedSkins = await AsyncStorage.getItem('ownedSkins');
+      if (savedOwnedSkins) {
+        setOwnedSkins(JSON.parse(savedOwnedSkins));
+      }
+    } catch (error) {
+    }
+  };
+
+  const saveSkinSelection = async (skinId) => {
+    try {
+      await AsyncStorage.setItem('selectedSkin', skinId);
+      setSelectedSkin(skinId);
+    } catch (error) {
+    }
+  };
+
+  const saveOwnedSkinsToStorage = async (skins) => {
+    try {
+      await AsyncStorage.setItem('ownedSkins', JSON.stringify(skins));
+      setOwnedSkins(skins);
+    } catch (error) {
+    }
+  };
+
+  // Power-up yükleme ve kaydetme
+  const loadPowerups = async () => {
+    try {
+      const savedInventory = await AsyncStorage.getItem('powerupInventory');
+      if (savedInventory) {
+        setPowerupInventory(JSON.parse(savedInventory));
+      }
+    } catch (error) {
+    }
+  };
+
+  const savePowerupInventory = async (inventory) => {
+    try {
+      await AsyncStorage.setItem('powerupInventory', JSON.stringify(inventory));
+      setPowerupInventory(inventory);
+    } catch (error) {
+    }
+  };
+
+  // Popup gösterme helper fonksiyonu (1 saniye sonra otomatik kapanır)
+  const showShopPopup = (message) => {
+    setShopPurchasePopup({ visible: true, message });
+
+    // Önceki timer'ı temizle
+    if (shopPopupTimeoutRef.current) {
+      clearTimeout(shopPopupTimeoutRef.current);
+    }
+
+    // 1 saniye sonra otomatik kapat
+    shopPopupTimeoutRef.current = setTimeout(() => {
+      setShopPurchasePopup({ visible: false, message: '' });
+    }, 1000);
+  };
+
+  // Skin satın alma fonksiyonu
+  const buySkin = async (skinId) => {
+    const skin = SKINS.find(s => s.id === skinId);
+    if (!skin) return;
+
+    // Zaten sahipse
+    if (ownedSkins.includes(skinId)) {
+      showShopPopup('Bu skine zaten sahipsin');
+      return;
+    }
+
+    // Premium kontrol
+    if (skin.isPremium && !premiumSkinsOwned) {
+      showShopPopup('Premium Skin Paketi gerekli');
+      return;
+    }
+
+    // Coin kontrol
+    if (coins < skin.coinPrice) {
+      showShopPopup(`${skin.coinPrice} coin gerekli`);
+      return;
+    }
+
+    // Satın al
+    const spent = await spendCoins(skin.coinPrice);
+    if (spent) {
+      const newOwnedSkins = [...ownedSkins, skinId];
+      await saveOwnedSkinsToStorage(newOwnedSkins);
+
+      // Otomatik seç
+      await saveSkinSelection(skinId);
+
+      triggerHaptic('success');
+      playSound(clickSound);
+      showShopPopup(`${skin.name} satın alındı! ✅`);
+    }
+  };
+
+  // Skin seçme fonksiyonu
+  const selectSkin = async (skinId) => {
+    if (!ownedSkins.includes(skinId)) {
+      showShopPopup('Bu skine sahip değilsin');
+      return;
+    }
+
+    await saveSkinSelection(skinId);
+    triggerHaptic('light');
+    playSound(clickSound);
+  };
+
+  // Power-up satın alma fonksiyonu
+  const buyPowerup = async (powerupId) => {
+    const powerup = POWERUPS.find(p => p.id === powerupId);
+    if (!powerup) return;
+
+    if (coins < powerup.coinPrice) {
+      showShopPopup(`${powerup.coinPrice} coin gerekli`);
+      return;
+    }
+
+    const spent = await spendCoins(powerup.coinPrice);
+    if (spent) {
+      const newInventory = {
+        ...powerupInventory,
+        [powerupId]: (powerupInventory[powerupId] || 0) + 1
+      };
+      await savePowerupInventory(newInventory);
+
+      triggerHaptic('success');
+      playSound(clickSound);
+
+      // Custom popup göster - 1 saniye sonra otomatik kapat
+      setPowerupPurchasePopup({ visible: true, message: `${powerup.name} satın alındı!` });
+
+      // Önceki timer'ı temizle
+      if (powerupPopupTimeoutRef.current) {
+        clearTimeout(powerupPopupTimeoutRef.current);
+      }
+
+      // 1 saniye sonra otomatik kapat
+      powerupPopupTimeoutRef.current = setTimeout(() => {
+        setPowerupPurchasePopup({ visible: false, message: '' });
+      }, 1000);
+    }
+  };
+
+  // Power-up kullanma fonksiyonu
+  const usePowerup = async (powerupId) => {
+    const powerup = POWERUPS.find(p => p.id === powerupId);
+    if (!powerup) return;
+
+    if (powerupInventory[powerupId] <= 0) {
+      showShopPopup('Envanterde yok');
+      return;
+    }
+
+    // Shield için activePowerup kontrolü yapma (çünkü shield sürekli aktif değil)
+    if (powerup.effect !== 'shield' && activePowerup !== null) {
+      showShopPopup('Zaten bir power-up aktif');
+      return;
+    }
+
+    // Envanterden düş
+    const newInventory = {
+      ...powerupInventory,
+      [powerupId]: powerupInventory[powerupId] - 1
+    };
+    await savePowerupInventory(newInventory);
+
+    // Efekti aktif et
+    if (powerup.effect === 'slowmotion') {
+      setActivePowerup('slowmotion');
+      triggerHaptic('medium');
+      playSound(clickSound);
+
+      if (powerupTimeoutRef.current) {
+        clearTimeout(powerupTimeoutRef.current);
+      }
+      powerupTimeoutRef.current = setTimeout(() => {
+        setActivePowerup(null);
+      }, powerup.duration);
+    } else if (powerup.effect === 'shield') {
+      setShieldActive(true);
+      shieldActiveRef.current = true; // Ref'i de set et
+      triggerHaptic('medium');
+      playSound(clickSound);
+    } else if (powerup.effect === 'freeze') {
+      setActivePowerup('freeze');
+      triggerHaptic('medium');
+      playSound(clickSound);
+
+      if (powerupTimeoutRef.current) {
+        clearTimeout(powerupTimeoutRef.current);
+      }
+      powerupTimeoutRef.current = setTimeout(() => {
+        setActivePowerup(null);
+      }, powerup.duration);
+    }
+  };
+
+  // Seçili skin'in renklerini al
+  const getCurrentSkinColors = () => {
+    const skin = SKINS.find(s => s.id === selectedSkin);
+    return skin ? skin.colors : SKINS[0].colors;
+  };
+
+  // Seçili skin'in temasını al
+  const getCurrentSkinTheme = () => {
+    const skin = SKINS.find(s => s.id === selectedSkin);
+    return skin ? skin.theme : SKINS[0].theme;
+  };
+
+  // Monetizasyon başlatma
+  const initializeMonetization = async () => {
+    // AdMob başlat
+    const adMobInitialized = await initializeAdMob();
+    if (adMobInitialized) {
+      loadInterstitialAd();
+      loadRewardedAd();
+    }
+
+    // IAP başlat
+    const iapCleanup = await initializeIAP();
+    if (iapCleanup) {
+      // IAP başarıyla başlatıldı
+      const products = await loadProducts();
+      setIapProducts(products);
+
+      // Satın alınmış ürünleri kontrol et
+      const removedAds = hasRemovedAds();
+      const premiumSkins = hasPremiumSkins();
+      setAdsRemoved(removedAds);
+      setPremiumSkinsOwned(premiumSkins);
+    }
+  };
+
+  // IAP fonksiyonları
+  const handlePurchase = async (productId) => {
+    try {
+      setIapLoading(true);
+      await purchaseProduct(productId);
+
+      // Satın alma başarılı
+      if (productId === IAP_PRODUCT_IDS.removeAds) {
+        setAdsRemoved(true);
+        showShopPopup('Reklamlar kaldırıldı! 🎉');
+      } else if (productId === IAP_PRODUCT_IDS.premiumSkins) {
+        setPremiumSkinsOwned(true);
+
+        // Tüm premium skinleri aç
+        const premiumSkinIds = SKINS.filter(s => s.isPremium).map(s => s.id);
+        const newOwnedSkins = [...new Set([...ownedSkins, ...premiumSkinIds])];
+        await saveOwnedSkinsToStorage(newOwnedSkins);
+
+        showShopPopup('Premium skin paketi açıldı! 🎨');
+      } else if (productId === IAP_PRODUCT_IDS.powerUpPack) {
+        // Power-up paketi: 5 Slow Motion + 5 Shield + 5 Freeze
+        const newInventory = {
+          ...powerupInventory,
+          slowmotion: (powerupInventory.slowmotion || 0) + 5,
+          shield: (powerupInventory.shield || 0) + 5,
+          freeze: (powerupInventory.freeze || 0) + 5,
+        };
+        await savePowerupInventory(newInventory);
+        showShopPopup('Power-up paketi açıldı! ⚡');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackSmall) {
+        await addCoins(100);
+        showShopPopup('100 coin kazandınız! 💰');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackMedium) {
+        await addCoins(600);
+        showShopPopup('600 coin kazandınız! 💰');
+      } else if (productId === IAP_PRODUCT_IDS.coinPackLarge) {
+        await addCoins(1500);
+        showShopPopup('1500 coin kazandınız! 💰');
+      }
+
+      triggerHaptic('success');
+      playSound(correctSound);
+    } catch (error) {
+      showShopPopup('Satın alma başarısız');
+      console.error('Purchase error:', error);
+    } finally {
+      setIapLoading(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      setIapLoading(true);
+      const purchases = await restorePurchases();
+
+      if (purchases.length > 0) {
+        // Satın alınanları kontrol et ve ayarla
+        const removedAds = hasRemovedAds();
+        const premiumSkins = hasPremiumSkins();
+        setAdsRemoved(removedAds);
+        setPremiumSkinsOwned(premiumSkins);
+
+        // Premium skinler satın alındıysa, tüm premium skinleri aç
+        if (premiumSkins) {
+          const premiumSkinIds = SKINS.filter(s => s.isPremium).map(s => s.id);
+          const newOwnedSkins = [...new Set([...ownedSkins, ...premiumSkinIds])];
+          await saveOwnedSkinsToStorage(newOwnedSkins);
+        }
+
+        showShopPopup('Satın almalar geri yüklendi! ✅');
+        triggerHaptic('success');
+      } else {
+        showShopPopup('Geri yüklenecek satın alma yok');
+      }
+    } catch (error) {
+      showShopPopup('Geri yükleme başarısız');
+      console.error('Restore error:', error);
+    } finally {
+      setIapLoading(false);
+    }
+  };
+
+  // Rewarded video ile devam etme
+  const handleContinueWithAd = () => {
+    if (continueUsesToday >= 3) {
+      showShopPopup('Günlük limit aşıldı 🕐');
+      return;
+    }
+
+    if (!isRewardedAdReady()) {
+      showShopPopup('Reklam hazır değil...');
+      return;
+    }
+
+    const success = showRewardedAd((earnedReward) => {
+      if (earnedReward) {
+        // Oyuna devam et
+        setContinueUsesToday(continueUsesToday + 1);
+        // 3 saniye geri sayım başlat
+        setCountdown(3);
+        setGameState('playing');
+        triggerHaptic('success');
+      } else {
+        showShopPopup('Reklam izlenmedi');
+      }
+    });
+
+    if (!success) {
+      showShopPopup('Reklam gösterilemedi');
+    }
+  };
+
+  // Rewarded video ile coin kazanma
+  const handleWatchAdForCoins = () => {
+    if (!isRewardedAdReady()) {
+      showShopPopup('Reklam hazır değil...');
+      return;
+    }
+
+    const success = showRewardedAd((earnedReward) => {
+      if (earnedReward) {
+        addCoins(25);
+        triggerHaptic('success');
+        playSound(correctSound);
+        showShopPopup('25 coin kazandınız! 💰');
+      }
+    });
+
+    if (!success) {
+      showShopPopup('Reklam gösterilemedi');
+    }
+  };
+
+  // ============ MONETİZASYON FONKSİYONLARI BİTİŞ ============
+
+  // İstatistikleri yükle
+  const loadStats = async () => {
+    try {
+      const stats = await AsyncStorage.multiGet([
+        'totalGamesPlayed',
+        'totalScore',
+        'totalCorrectMatches',
+        'totalWrongMatches',
+        'longestStreak',
+      ]);
+
+      stats.forEach(([key, value]) => {
+        if (value !== null) {
+          const numValue = parseInt(value);
+          if (key === 'totalGamesPlayed') setTotalGamesPlayed(numValue);
+          if (key === 'totalScore') setTotalScore(numValue);
+          if (key === 'totalCorrectMatches') setTotalCorrectMatches(numValue);
+          if (key === 'totalWrongMatches') setTotalWrongMatches(numValue);
+          if (key === 'longestStreak') setLongestStreak(numValue);
+        }
+      });
+    } catch (error) {
+    }
+  };
+
+  // İstatistikleri kaydet
+  const saveStats = async () => {
+    try {
+      await AsyncStorage.multiSet([
+        ['totalGamesPlayed', totalGamesPlayed.toString()],
+        ['totalScore', totalScore.toString()],
+        ['totalCorrectMatches', totalCorrectMatches.toString()],
+        ['totalWrongMatches', totalWrongMatches.toString()],
+        ['longestStreak', longestStreak.toString()],
+      ]);
+    } catch (error) {
+    }
+  };
+
+  // Başarımları yükle
+  const loadAchievements = async () => {
+    try {
+      const savedAchievements = await AsyncStorage.getItem('achievements');
+
+      if (savedAchievements) {
+        const parsed = JSON.parse(savedAchievements);
+        setAchievements(parsed);
+      } else {
+        // İlk yükleme - tüm başarımları kilitle
+        const initialAchievements = {};
+        ACHIEVEMENTS_LIST.forEach(achievement => {
+          initialAchievements[achievement.id] = { unlocked: false, progress: 0 };
+        });
+        setAchievements(initialAchievements);
+      }
+    } catch (error) {
+    }
+  };
+
+  // Başarım kontrolü ve kilidi aç
+  const checkAndUnlockAchievement = async (achievementId, currentProgress) => {
+
+    const achievement = ACHIEVEMENTS_LIST.find(a => a.id === achievementId);
+    if (!achievement) {
+      return;
+    }
+
+
+    // AsyncStorage'dan güncel veriyi oku (race condition önlemek için)
+    const savedAchievements = await AsyncStorage.getItem('achievements');
+    const currentAchievements = savedAchievements ? JSON.parse(savedAchievements) : {};
+
+    const currentState = currentAchievements[achievementId];
+
+    if (currentState && currentState.unlocked) {
+      return; // Zaten açılmış
+    }
+
+    const newProgress = Math.min(currentProgress, achievement.requirement);
+    const unlocked = newProgress >= achievement.requirement;
+
+
+    const updatedAchievements = {
+      ...currentAchievements,
+      [achievementId]: { unlocked, progress: newProgress }
+    };
+
+    setAchievements(updatedAchievements);
+    await AsyncStorage.setItem('achievements', JSON.stringify(updatedAchievements));
+
+    if (unlocked && (!currentState || !currentState.unlocked)) {
+      // Yeni başarım açıldı!
+      triggerHaptic('success');
+      playSound(correctSound);
+      showAchievementToast(achievement);
+    }
+  };
+
+  // Başarım bildirimi göster (Artık sadece session'a ekliyor, oyun sırasında bildirim göstermiyor)
+  const showAchievementToast = (achievement) => {
+    // Bu oyun oturumunda kazanılan başarımları sakla
+    setSessionAchievements(prev => {
+      const alreadyAdded = prev.find(a => a.id === achievement.id);
+      if (alreadyAdded) return prev;
+      return [...prev, achievement];
+    });
+  };
+
+  // Günlük giriş kontrolü
+  const checkDailyLogin = async () => {
+    try {
+      const today = new Date().toDateString();
+      const lastLogin = await AsyncStorage.getItem('lastLoginDate');
+      const streak = await AsyncStorage.getItem('dailyLoginStreak');
+
+      if (lastLogin !== today) {
+        // Yeni gün girişi
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
+
+        let newStreak = 1;
+        if (lastLogin === yesterdayStr) {
+          // Ardışık gün
+          newStreak = (streak ? parseInt(streak) : 0) + 1;
+        }
+
+        setDailyLoginStreak(newStreak);
+        setLastLoginDate(today);
+        setDailyRewardClaimed(false);
+
+        await AsyncStorage.multiSet([
+          ['lastLoginDate', today],
+          ['dailyLoginStreak', newStreak.toString()],
+          ['dailyRewardClaimed', 'false'],
+        ]);
+
+        // Günlük streak başarımlarını kontrol et
+        checkAndUnlockAchievement('dedicated', newStreak);
+
+        // Günlük görevleri oluştur
+        generateDailyTasks();
+      } else {
+        // Aynı gün
+        setDailyLoginStreak(streak ? parseInt(streak) : 1);
+        setLastLoginDate(lastLogin);
+        const claimed = await AsyncStorage.getItem('dailyRewardClaimed');
+        setDailyRewardClaimed(claimed === 'true');
+        loadDailyTasks();
+      }
+    } catch (error) {
+    }
+  };
+
+  // Günlük görevler oluştur
+  const generateDailyTasks = () => {
+    const tasks = [
+      { id: 'play_5', title: '5 oyun oyna', target: 5, progress: 0, completed: false },
+      { id: 'score_25', title: '25 puan kazan (tek oyunda)', target: 25, progress: 0, completed: false },
+      { id: 'match_10', title: '10 doğru eşleşme yap', target: 10, progress: 0, completed: false },
+    ];
+    setDailyTasks(tasks);
+    AsyncStorage.setItem('dailyTasks', JSON.stringify(tasks));
+  };
+
+  // Günlük görevleri yükle
+  const loadDailyTasks = async () => {
+    try {
+      const tasks = await AsyncStorage.getItem('dailyTasks');
+      if (tasks) {
+        setDailyTasks(JSON.parse(tasks));
+      } else {
+        generateDailyTasks();
+      }
+    } catch (error) {
+    }
+  };
+
+  // Günlük görev güncelle
+  const updateDailyTask = async (taskId, progress) => {
+    const updatedTasks = dailyTasks.map(task => {
+      if (task.id === taskId) {
+        const newProgress = Math.min(progress, task.target);
+        const completed = newProgress >= task.target;
+        return { ...task, progress: newProgress, completed };
+      }
+      return task;
+    });
+
+    setDailyTasks(updatedTasks);
+    await AsyncStorage.setItem('dailyTasks', JSON.stringify(updatedTasks));
+  };
+
+  // Skorları sıfırla
+  const resetAllScores = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        'highScore',
+        'totalGamesPlayed',
+        'totalScore',
+        'totalCorrectMatches',
+        'totalWrongMatches',
+        'longestStreak',
+        'achievements',
+        'dailyLoginStreak',
+        'lastLoginDate',
+        'dailyTasks',
+        'dailyRewardClaimed',
+      ]);
+
+      setHighScore(0);
+      setTotalGamesPlayed(0);
+      setTotalScore(0);
+      setTotalCorrectMatches(0);
+      setTotalWrongMatches(0);
+      setLongestStreak(0);
+      setCurrentStreak(0);
+
+      const initialAchievements = {};
+      ACHIEVEMENTS_LIST.forEach(achievement => {
+        initialAchievements[achievement.id] = { unlocked: false, progress: 0 };
+      });
+      setAchievements(initialAchievements);
+
+      setDailyLoginStreak(0);
+      setDailyTasks([]);
+
+      triggerHaptic('success');
+      alert('Tüm skorlar ve başarımlar sıfırlandı!');
+    } catch (error) {
+    }
+  };
+
+  // Tutorial'ı tamamla
+  const completeTutorial = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenTutorial', 'true');
+      setShowTutorial(false);
+      setGameState('menu');
+      setTutorialStep(0);
+    } catch (error) {
+    }
+  };
+
+  // Tutorial'ı tekrar göster
+  const restartTutorial = useCallback(() => {
+    setTutorialStep(0);
+    setShowTutorial(true);
+    setSettingsVisible(false); // Ayarları kapat
+    setGameState('tutorial');
+  }, []);
+
+  // Ayarlar menüsünü aç
+  const openSettings = () => {
+    setPreviousGameState(gameState); // Mevcut state'i kaydet
+    setSettingsVisible(true);
+    triggerHaptic('light');
+
+    // Eğer oyun oynuyorsa, oyun loop'unu durdur (pause)
+    if (gameState === 'playing' && gameLoop.current) {
+      clearInterval(gameLoop.current);
+      gameLoop.current = null;
+    }
+  };
+
+  // Ayarlar menüsünü kapat
+  const closeSettings = useCallback(() => {
+    setSettingsVisible(false);
+    triggerHaptic('light');
+
+    // Eğer önceki state playing ise, oyunu devam ettir (resume)
+    if (previousGameState === 'playing') {
+      // Game loop'u yeniden başlatmak için gameState'i tetikle
+      setGameState('playing');
+    }
+  }, [previousGameState]);
+
+  // Switch handler'ları - useCallback ile optimize edilmiş
+  const handleSoundToggle = useCallback((value) => {
+    setSoundEnabled(value);
+    saveSetting('soundEnabled', value);
+    if (hapticEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [hapticEnabled, saveSetting]);
+
+  const handleMusicToggle = useCallback((value) => {
+    setMusicEnabled(value);
+    saveSetting('musicEnabled', value);
+    if (hapticEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [hapticEnabled, saveSetting]);
+
+  const handleHapticToggle = useCallback((value) => {
+    setHapticEnabled(value);
+    saveSetting('hapticEnabled', value);
+    if (value) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  }, [saveSetting]);
+
+  // Oyunu başlat
+  const startGame = () => {
+    triggerHaptic('medium');
+    playSound(clickSound);
+    setGameState('playing');
+    setScore(0);
+    setBalls([]);
+    setParticles([]);
+    setSpeed(INITIAL_SPEED);
+    ballIdCounter.current = 0;
+    spawnTimer.current = 0;
+    shieldUsedBallsRef.current.clear(); // Shield referansını temizle
+    setShieldActive(false); // Shield'ı deaktif et
+    shieldActiveRef.current = false; // Shield ref'ini de sıfırla
+    setSessionAchievements([]); // Yeni oyun başladığında başarımları temizle
+    spawnBall();
+  };
+
+  // Parçacık efekti oluştur
+  const createParticles = (x, y, color, isSuccess = true) => {
+    const particleCount = isSuccess ? 16 : 12; // Daha fazla parçacık
+    const newParticles = [];
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount;
+      const velocity = isSuccess ? 8 : 5; // Daha hızlı
+      const particle = {
+        id: particleIdCounter.current++,
+        x: x + BALL_SIZE / 2,
+        y: y + BALL_SIZE / 2,
+        vx: Math.cos(angle) * velocity,
+        vy: Math.sin(angle) * velocity,
+        color: isSuccess ? color : '#FF3B30',
+        opacity: new Animated.Value(1),
+        size: isSuccess ? 12 : 10, // Daha büyük parçacıklar
+      };
+      newParticles.push(particle);
+
+      // Parçacığı kaybet
+      Animated.timing(particle.opacity, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+    }
+
+    setParticles(prev => [...prev, ...newParticles]);
+
+    // Parçacıkları temizle
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.find(np => np.id === p.id)));
+    }, 900);
+  };
+
+  // Yeni top oluştur
+  const spawnBall = () => {
+    setBalls((prevBalls) => {
+      const topMostBall = prevBalls.length > 0
+        ? prevBalls.reduce((top, ball) => ball.y < top.y ? ball : top, prevBalls[0])
+        : null;
+
+      const minSpawnDistance = BALL_SIZE * 1.5;
+      if (topMostBall && topMostBall.y < minSpawnDistance) {
+        return prevBalls;
+      }
+
+      // Seçili skin'in renklerini kullan
+      const skinColors = getCurrentSkinColors();
+      const randomColorIndex = Math.floor(Math.random() * COLORS.length);
+      const skinColorIndex = randomColorIndex % skinColors.length;
+      const randomColorHex = skinColors[skinColorIndex];
+      const gameColor = COLORS[randomColorIndex];
+
+      const newBall = {
+        id: ballIdCounter.current++,
+        colorId: gameColor.id,
+        colorIndex: randomColorIndex, // Index ekle
+        color: randomColorHex,
+        x: Math.random() * (width - BALL_SIZE),
+        y: -BALL_SIZE,
+        fadeAnim: new Animated.Value(1),
+        scaleAnim: new Animated.Value(1),
+        targetX: null,
+        targetColorIndex: null, // Index için hedef ekle
+        isDirected: false,
+      };
+
+      return [...prevBalls, newBall];
+    });
+  };
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+        triggerHaptic('light');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
+
+  // Ana oyun döngüsü
+  useEffect(() => {
+    if (gameState === 'playing' && !settingsVisible && countdown === 0) {
+      gameLoop.current = setInterval(() => {
+        // Freeze efekti aktifse topları dondur
+        if (activePowerup === 'freeze') {
+          return;
+        }
+
+        setBalls((prevBalls) => {
+          const updatedBalls = prevBalls.map((ball) => {
+            let newX = ball.x;
+            // Slow motion efekti - hızı yarıya düşür
+            const currentSpeed = activePowerup === 'slowmotion' ? speed / 2 : speed;
+            let newY = ball.y + currentSpeed;
+
+            if (ball.isDirected && ball.targetX !== null) {
+              const diff = ball.targetX - ball.x;
+              const moveSpeed = 80;
+
+              if (Math.abs(diff) > 1) {
+                newX = ball.x + Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed);
+              } else {
+                newX = ball.targetX;
+              }
+            }
+
+            const sortedBalls = prevBalls
+              .filter((b) => b.id !== ball.id && b.y > ball.y)
+              .sort((a, b) => a.y - b.y);
+
+            if (sortedBalls.length > 0) {
+              const closestBallBelow = sortedBalls[0];
+              const minDistance = BALL_SIZE * 2;
+
+              if (closestBallBelow.y - newY < minDistance) {
+                newY = ball.y;
+              }
+            }
+
+            return {
+              ...ball,
+              x: newX,
+              y: newY,
+            };
+          });
+
+          const activeBalls = updatedBalls.filter((ball) => {
+            // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
+            if (boxContainerY === null) {
+              return true; // Henüz ölçülmemişse topları tut
+            }
+
+            // Topun alt hizasını hesapla
+            const ballBottom = ball.y + BALL_SIZE;
+
+            // Çarpışma kontrolü: Top container'a ulaştı mı?
+            if (ballBottom >= boxContainerY) {
+              return !checkBallReached(ball);
+            }
+
+            return true;
+          });
+
+          return activeBalls;
+        });
+
+        // Parçacık animasyonu
+        setParticles(prev => prev.map(p => ({
+          ...p,
+          x: p.x + p.vx,
+          y: p.y + p.vy,
+          vy: p.vy + 0.3, // Yerçekimi
+        })));
+
+        spawnTimer.current++;
+        if (spawnTimer.current >= 40) {
+          spawnTimer.current = 0;
+          spawnBall();
+        }
+      }, 16);
+
+      return () => {
+        if (gameLoop.current) {
+          clearInterval(gameLoop.current);
+        }
+      };
+    }
+  }, [gameState, speed, settingsVisible, countdown, activePowerup]);
+
+  // Top yakalama ve yönlendirme
+  const directBall = (ballId, targetColorId, boxIndex) => {
+    triggerHaptic('light');
+    playSound(clickSound);
+
+    setBalls((prevBalls) => {
+      return prevBalls.map((ball) => {
+        if (ball.id === ballId && !ball.isDirected) {
+          const boxWidth = width / 4;
+          const targetX = boxIndex * boxWidth + (boxWidth / 2) - (BALL_SIZE / 2);
+
+          // Top yakalandığında hafif bir büyüme animasyonu
+          Animated.sequence([
+            Animated.timing(ball.scaleAnim, {
+              toValue: 1.2,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.timing(ball.scaleAnim, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+          ]).start();
+
+          return {
+            ...ball,
+            targetX: targetX,
+            isDirected: true,
+            targetColorId: targetColorId,
+            targetColorIndex: boxIndex, // Index'i de kaydet
+          };
+        }
+        return ball;
+      });
+    });
+  };
+
+  // Topu kutuya ulaştığında kontrol et
+  const checkBallReached = (ball) => {
+    // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
+    if (boxContainerY === null) return false;
+
+    // Shield ile zaten işaretlenmiş bir top mu kontrol et
+    if (shieldUsedBallsRef.current.has(ball.id)) {
+      return false; // Bu topu tekrar kontrol etme
+    }
+
+    // Topun alt hizasını hesapla
+    const ballBottom = ball.y + BALL_SIZE;
+
+    // Çarpışma kontrolü
+    if (ballBottom >= boxContainerY) {
+      // Sadece yönlendirilmiş topları kontrol et
+      if (ball.isDirected) {
+        // Index bazlı eşleştirme (skinler için)
+        const isMatch = ball.colorIndex === ball.targetColorIndex;
+        if (isMatch) {
+          // Doğru eşleşme - topu kaybet (kutuya girsin)
+          triggerHaptic('success');
+          playSound(correctSound);
+          createParticles(ball.x, ball.y, ball.color, true);
+
+          Animated.timing(ball.fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+
+          setTimeout(() => {
+            setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+          }, 200);
+
+          // Streak güncelle
+          const newStreak = currentStreak + 1;
+          setCurrentStreak(newStreak);
+
+          // İstatistikleri güncelle
+          const newCorrectMatches = totalCorrectMatches + 1;
+          setTotalCorrectMatches(newCorrectMatches);
+          AsyncStorage.setItem('totalCorrectMatches', newCorrectMatches.toString());
+
+          // Streak başarımlarını kontrol et
+          checkAndUnlockAchievement('perfect_10', newStreak);
+          checkAndUnlockAchievement('perfect_20', newStreak);
+
+          // Günlük görev güncelle
+          updateDailyTask('match_10', newCorrectMatches % 1000);
+
+          setScore((prevScore) => {
+            const newScore = prevScore + 1;
+
+            if (newScore % 5 === 0) {
+              setSpeed((prevSpeed) => prevSpeed + SPEED_INCREMENT);
+            }
+
+            return newScore;
+          });
+
+          return true;
+        } else {
+          // Yanlış eşleşme - Game Over
+          // Shield kontrolü
+          if (shieldActiveRef.current) {
+            // Shield kullanıldı, oyun bitmesin, topu kaldır
+            setShieldActive(false);
+            shieldActiveRef.current = false;
+            shieldUsedBallsRef.current.add(ball.id); // Bu topu işaretle
+            triggerHaptic('warning');
+            playSound(clickSound);
+
+            // Topu kaldır
+            Animated.timing(ball.fadeAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+
+            setTimeout(() => {
+              setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+              shieldUsedBallsRef.current.delete(ball.id); // Temizle
+            }, 200);
+
+            // Shield kullanıldı - ekranda gösterge zaten var
+            return true;
+          } else {
+            // Eşleşme yok - Game Over
+            triggerHaptic('error');
+            playSound(wrongSound);
+            createParticles(ball.x, ball.y, ball.color, false);
+            endGame();
+            return true;
+          }
+        }
+      } else {
+        // Yönlendirilmemiş top kutuya ulaştı - Game Over
+        if (shieldActiveRef.current) {
+          // Shield kullanıldı
+          setShieldActive(false);
+          shieldActiveRef.current = false;
+          shieldUsedBallsRef.current.add(ball.id); // Bu topu işaretle
+          triggerHaptic('warning');
+          playSound(clickSound);
+
+          Animated.timing(ball.fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+
+          setTimeout(() => {
+            setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+            shieldUsedBallsRef.current.delete(ball.id); // Temizle
+          }, 200);
+
+          return true;
+        } else {
+          // Yönlendirilmemiş top - Game Over
+          triggerHaptic('error');
+          playSound(wrongSound);
+          endGame();
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  // Oyunu bitir
+  const endGame = async () => {
+    setGameState('gameOver');
+    saveHighScore(score);
+
+    if (gameLoop.current) {
+      clearInterval(gameLoop.current);
+    }
+
+    // İstatistikleri güncelle
+    const newTotalGames = totalGamesPlayed + 1;
+    const newTotalScore = totalScore + score;
+    const newTotalWrong = totalWrongMatches + 1;
+
+    setTotalGamesPlayed(newTotalGames);
+    setTotalScore(newTotalScore);
+    setTotalWrongMatches(newTotalWrong);
+
+    // Streak kontrolü
+    if (currentStreak > longestStreak) {
+      setLongestStreak(currentStreak);
+    }
+    setCurrentStreak(0);
+
+    // İstatistikleri kaydet
+    await AsyncStorage.multiSet([
+      ['totalGamesPlayed', newTotalGames.toString()],
+      ['totalScore', newTotalScore.toString()],
+      ['totalWrongMatches', newTotalWrong.toString()],
+      ['longestStreak', Math.max(currentStreak, longestStreak).toString()],
+    ]);
+
+    // Başarımları kontrol et (sırayla - race condition önlemek için)
+    await checkAndUnlockAchievement('first_game', newTotalGames);
+    await checkAndUnlockAchievement('century', newTotalGames);
+    await checkAndUnlockAchievement('beginner', score);
+    await checkAndUnlockAchievement('expert', score);
+    await checkAndUnlockAchievement('master', score);
+    await checkAndUnlockAchievement('legend', score);
+
+    // Günlük görevleri güncelle
+    updateDailyTask('play_5', newTotalGames % 1000); // Bugünkü oyun sayısı
+    if (score >= 25) {
+      updateDailyTask('score_25', 25);
+    }
+
+    // Coin kazandır (puana göre)
+    await addCoins(score);
+
+    // Interstitial reklam göster (her 3-4 oyunda bir, reklamsız değilse)
+    const newGamesCount = gamesPlayedSinceAd + 1;
+    setGamesPlayedSinceAd(newGamesCount);
+
+    if (!adsRemoved && newGamesCount >= 3) {
+      // Reklam göster
+      setTimeout(() => {
+        if (isInterstitialReady()) {
+          showInterstitialAd();
+          setGamesPlayedSinceAd(0);
+        }
+      }, 1000); // 1 saniye gecikme (Game Over ekranı görünsün)
+    }
+  };
+
+  // Yasal belgeleri göster
+  const showPrivacyPolicy = useCallback(() => {
+    setModalTitle('Gizlilik Politikası');
+    setModalContent('privacy');
+    setModalVisible(true);
+  }, []);
+
+  const showTermsOfService = useCallback(() => {
+    setModalTitle('Kullanım Şartları');
+    setModalContent('terms');
+    setModalVisible(true);
+  }, []);
+
+  // Link açma fonksiyonu
+  const openLink = useCallback(async (url) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+      }
+    } catch (error) {
+    }
+  }, []);
+
+  // Ayarlar Modal - useMemo ile optimize edilmiş
+  const SettingsModalComponent = useMemo(() => (
+    <SettingsModal
+      visible={settingsVisible}
+      soundEnabled={soundEnabled}
+      musicEnabled={musicEnabled}
+      hapticEnabled={hapticEnabled}
+      highScore={highScore}
+      totalGamesPlayed={totalGamesPlayed}
+      totalScore={totalScore}
+      totalCorrectMatches={totalCorrectMatches}
+      longestStreak={longestStreak}
+      dailyLoginStreak={dailyLoginStreak}
+      onClose={closeSettings}
+      onSoundToggle={handleSoundToggle}
+      onMusicToggle={handleMusicToggle}
+      onHapticToggle={handleHapticToggle}
+      onRestartTutorial={restartTutorial}
+      onShowPrivacyPolicy={showPrivacyPolicy}
+      onShowTermsOfService={showTermsOfService}
+      onOpenLink={openLink}
+    />
+  ), [settingsVisible, soundEnabled, musicEnabled, hapticEnabled, highScore, totalGamesPlayed, totalScore, totalCorrectMatches, longestStreak, dailyLoginStreak, handleSoundToggle, handleMusicToggle, handleHapticToggle, closeSettings, restartTutorial, showPrivacyPolicy, showTermsOfService, openLink]);
+
+  // Top bileşeni
+  // Skinler ekranı
+  if (gameState === 'skins') {
+    return (
+      <SkinsScreen
+        coins={coins}
+        ownedSkins={ownedSkins}
+        selectedSkin={selectedSkin}
+        premiumSkinsOwned={premiumSkinsOwned}
+        onNavigateMenu={() => setGameState('menu')}
+        onSelectSkin={selectSkin}
+        onBuySkin={buySkin}
+        onNavigateStore={() => setGameState('store')}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+      />
+    );
+  }
+
+  // Power-ups ekranı
+  if (gameState === 'powerups') {
+    const currentTheme = getCurrentSkinTheme();
+
+    return (
+      <PowerupsScreen
+        coins={coins}
+        powerupInventory={powerupInventory}
+        currentTheme={currentTheme}
+        powerupPurchasePopup={powerupPurchasePopup}
+        onNavigateMenu={() => setGameState('menu')}
+        onBuyPowerup={buyPowerup}
+        onNavigateStore={() => setGameState('store')}
+        onClosePowerupPopup={() => setPowerupPurchasePopup({ visible: false, message: '' })}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+      />
+    );
+  }
+
+  // Başarımlar ekranı
+  if (gameState === 'achievements') {
+    return (
+      <AchievementsScreen
+        achievements={achievements}
+        onNavigateMenu={() => setGameState('menu')}
+        onTriggerHaptic={triggerHaptic}
+      />
+    );
+  }
+
+  // Günlük Görevler ekranı
+  if (gameState === 'dailyTasks') {
+    return (
+      <DailyTasksScreen
+        dailyLoginStreak={dailyLoginStreak}
+        dailyTasks={dailyTasks}
+        onNavigateMenu={() => setGameState('menu')}
+        onTriggerHaptic={triggerHaptic}
+      />
+    );
+  }
+
+  // Mağaza ekranı
+  if (gameState === 'store') {
+    const currentTheme = getCurrentSkinTheme();
+
+    return (
+      <StoreScreen
+        coins={coins}
+        adsRemoved={adsRemoved}
+        premiumSkinsOwned={premiumSkinsOwned}
+        iapLoading={iapLoading}
+        currentTheme={currentTheme}
+        shopPurchasePopup={shopPurchasePopup}
+        onNavigateMenu={() => setGameState('menu')}
+        onPurchase={handlePurchase}
+        onRestorePurchases={handleRestorePurchases}
+        onWatchAdForCoins={handleWatchAdForCoins}
+        onCloseShopPopup={() => setShopPurchasePopup({ visible: false, message: '' })}
+        onTriggerHaptic={triggerHaptic}
+      />
+    );
+  }
+
+  // Tutorial ekranı
+  // Tutorial ekranı
+  if (gameState === 'tutorial') {
+    return (
+      <TutorialScreen
+        tutorialStep={tutorialStep}
+        onCompleteTutorial={completeTutorial}
+        onNextStep={() => setTutorialStep(tutorialStep + 1)}
+        onTriggerHaptic={triggerHaptic}
+      />
+    );
+  }
+  // Menü ekranı
+  if (gameState === 'menu') {
+    return (
+      <MenuScreen
+        coins={coins}
+        highScore={highScore}
+        modalVisible={modalVisible}
+        modalTitle={modalTitle}
+        modalContent={modalContent}
+        onStartGame={startGame}
+        onNavigate={(screen) => setGameState(screen)}
+        onOpenSettings={openSettings}
+        onShowPrivacyPolicy={showPrivacyPolicy}
+        onShowTermsOfService={showTermsOfService}
+        onOpenLink={openLink}
+        onCloseModal={() => setModalVisible(false)}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+        SettingsModal={SettingsModalComponent}
+      />
+    );
+  }
+  // Oyun bitti ekranı
+  if (gameState === 'gameOver') {
+    return (
+      <GameOverScreen
+        score={score}
+        highScore={highScore}
+        sessionAchievements={sessionAchievements}
+        continueUsesToday={continueUsesToday}
+        isRewardedAdReady={isRewardedAdReady}
+        onStartGame={startGame}
+        onNavigateMenu={() => setGameState('menu')}
+        onContinueWithAd={handleContinueWithAd}
+        onTriggerHaptic={triggerHaptic}
+        SettingsModal={SettingsModalComponent}
+      />
+    );
+  }
+  // Oyun ekranı
+  const currentTheme = getCurrentSkinTheme();
+
+  return (
+    <GameScreen
+      score={score}
+      highScore={highScore}
+      balls={balls}
+      particles={particles}
+      countdown={countdown}
+      adsRemoved={adsRemoved}
+      currentTheme={currentTheme}
+      powerupInventory={powerupInventory}
+      activePowerup={activePowerup}
+      shieldActive={shieldActive}
+      powerupPurchasePopup={powerupPurchasePopup}
+      onOpenSettings={openSettings}
+      onUsePowerup={usePowerup}
+      onDirectBall={directBall}
+      onBoxLayout={(event) => {
+        const { y } = event.nativeEvent.layout;
+        const adjustedY = y - 95 - 50;
+        setBoxContainerY(adjustedY);
+      }}
+      onClosePowerupPopup={() => setPowerupPurchasePopup({ visible: false, message: '' })}
+      getCurrentSkinColors={getCurrentSkinColors}
+      SettingsModal={SettingsModalComponent}
+    />
+  );
+}
