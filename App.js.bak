@@ -184,6 +184,7 @@ export default function App() {
         setGameState('tutorial');
       }
     } catch (error) {
+      console.log('Tutorial kontrolü hatası:', error);
     }
   };
 
@@ -194,11 +195,13 @@ export default function App() {
         require('./assets/sounds/correct.mp3')
       );
       correctSound.current = correct;
+      console.log('✅ Correct sound loaded');
 
       const { sound: wrong } = await Audio.Sound.createAsync(
         require('./assets/sounds/wrong.mp3')
       );
       wrongSound.current = wrong;
+      console.log('✅ Wrong sound loaded');
 
       // Click sesi opsiyonel - yoksa hata vermesin
       try {
@@ -206,7 +209,9 @@ export default function App() {
           require('./assets/sounds/click.mp3')
         );
         clickSound.current = click;
+        console.log('✅ Click sound loaded');
       } catch (e) {
+        console.log('⚠️ Click sound not found, using haptic only');
       }
 
       const { sound: music } = await Audio.Sound.createAsync(
@@ -214,8 +219,10 @@ export default function App() {
         { isLooping: true, shouldPlay: false, volume: 0.6 }
       );
       backgroundMusic.current = music;
+      console.log('✅ Background music loaded');
 
     } catch (error) {
+      console.log('❌ Ses yükleme hatası:', error);
     }
   };
 
@@ -226,6 +233,7 @@ export default function App() {
     try {
       await soundRef.current.replayAsync();
     } catch (error) {
+      console.log('Ses çalma hatası:', error);
     }
   };
 
@@ -238,18 +246,22 @@ export default function App() {
         if (musicEnabled && gameState === 'playing' && !settingsVisible) {
           const status = await backgroundMusic.current.getStatusAsync();
           if (!status.isLoaded) {
+            console.log('⚠️ Music not loaded yet');
             return;
           }
           if (!status.isPlaying) {
+            console.log('🎵 Starting background music');
             await backgroundMusic.current.playAsync();
           }
         } else {
           const status = await backgroundMusic.current.getStatusAsync();
           if (status.isLoaded && status.isPlaying) {
+            console.log('⏸️ Pausing background music');
             await backgroundMusic.current.pauseAsync();
           }
         }
       } catch (error) {
+        console.log('❌ Müzik kontrolü hatası:', error);
       }
     };
 
@@ -279,6 +291,7 @@ export default function App() {
           break;
       }
     } catch (error) {
+      console.log('Haptic feedback hatası:', error);
     }
   };
 
@@ -300,6 +313,7 @@ export default function App() {
         }
       });
     } catch (error) {
+      console.log('Ayarlar yüklenirken hata:', error);
     }
   };
 
@@ -308,6 +322,7 @@ export default function App() {
     try {
       await AsyncStorage.setItem(key, value.toString());
     } catch (error) {
+      console.log('Ayar kaydedilirken hata:', error);
     }
   }, []);
 
@@ -318,6 +333,7 @@ export default function App() {
         setHighScore(parseInt(savedHighScore));
       }
     } catch (error) {
+      console.log('Yüksek skor yüklenirken hata:', error);
     }
   };
 
@@ -331,6 +347,7 @@ export default function App() {
         playSound(correctSound);
       }
     } catch (error) {
+      console.log('Yüksek skor kaydedilirken hata:', error);
     }
   };
 
@@ -344,6 +361,7 @@ export default function App() {
         setCoins(parseInt(savedCoins));
       }
     } catch (error) {
+      console.log('Coin yüklenirken hata:', error);
     }
   };
 
@@ -352,6 +370,7 @@ export default function App() {
       await AsyncStorage.setItem('coins', newCoins.toString());
       setCoins(newCoins);
     } catch (error) {
+      console.log('Coin kaydedilirken hata:', error);
     }
   };
 
@@ -363,6 +382,7 @@ export default function App() {
       const newCoins = currentCoins + amount;
       await saveCoins(newCoins);
     } catch (error) {
+      console.log('Coin eklenirken hata:', error);
     }
   };
 
@@ -386,6 +406,7 @@ export default function App() {
         setOwnedSkins(JSON.parse(savedOwnedSkins));
       }
     } catch (error) {
+      console.log('Skin yüklenirken hata:', error);
     }
   };
 
@@ -394,6 +415,7 @@ export default function App() {
       await AsyncStorage.setItem('selectedSkin', skinId);
       setSelectedSkin(skinId);
     } catch (error) {
+      console.log('Skin kaydedilirken hata:', error);
     }
   };
 
@@ -402,6 +424,7 @@ export default function App() {
       await AsyncStorage.setItem('ownedSkins', JSON.stringify(skins));
       setOwnedSkins(skins);
     } catch (error) {
+      console.log('Sahip olunan skinler kaydedilirken hata:', error);
     }
   };
 
@@ -413,6 +436,7 @@ export default function App() {
         setPowerupInventory(JSON.parse(savedInventory));
       }
     } catch (error) {
+      console.log('Power-up yüklenirken hata:', error);
     }
   };
 
@@ -421,6 +445,7 @@ export default function App() {
       await AsyncStorage.setItem('powerupInventory', JSON.stringify(inventory));
       setPowerupInventory(inventory);
     } catch (error) {
+      console.log('Power-up envanteri kaydedilirken hata:', error);
     }
   };
 
@@ -772,6 +797,7 @@ export default function App() {
         }
       });
     } catch (error) {
+      console.log('İstatistikler yüklenirken hata:', error);
     }
   };
 
@@ -786,19 +812,24 @@ export default function App() {
         ['longestStreak', longestStreak.toString()],
       ]);
     } catch (error) {
+      console.log('İstatistikler kaydedilirken hata:', error);
     }
   };
 
   // Başarımları yükle
   const loadAchievements = async () => {
     try {
+      console.log('📥 loadAchievements çağrıldı');
       const savedAchievements = await AsyncStorage.getItem('achievements');
+      console.log('💾 AsyncStorage\'dan gelen veri:', savedAchievements);
 
       if (savedAchievements) {
         const parsed = JSON.parse(savedAchievements);
+        console.log('✅ Parse edilmiş başarımlar:', parsed);
         setAchievements(parsed);
       } else {
         // İlk yükleme - tüm başarımları kilitle
+        console.log('⚠️ AsyncStorage boş, başarımlar ilk defa oluşturuluyor');
         const initialAchievements = {};
         ACHIEVEMENTS_LIST.forEach(achievement => {
           initialAchievements[achievement.id] = { unlocked: false, progress: 0 };
@@ -806,31 +837,38 @@ export default function App() {
         setAchievements(initialAchievements);
       }
     } catch (error) {
+      console.log('❌ Başarımlar yüklenirken hata:', error);
     }
   };
 
   // Başarım kontrolü ve kilidi aç
   const checkAndUnlockAchievement = async (achievementId, currentProgress) => {
+    console.log('🎯 checkAndUnlockAchievement çağrıldı:', achievementId, 'Progress:', currentProgress);
 
     const achievement = ACHIEVEMENTS_LIST.find(a => a.id === achievementId);
     if (!achievement) {
+      console.log('❌ Başarım bulunamadı:', achievementId);
       return;
     }
 
+    console.log('✅ Başarım bulundu:', achievement.title, 'Gereksinim:', achievement.requirement);
 
     // AsyncStorage'dan güncel veriyi oku (race condition önlemek için)
     const savedAchievements = await AsyncStorage.getItem('achievements');
     const currentAchievements = savedAchievements ? JSON.parse(savedAchievements) : {};
 
     const currentState = currentAchievements[achievementId];
+    console.log('📊 Mevcut durum:', currentState);
 
     if (currentState && currentState.unlocked) {
+      console.log('⏭️ Zaten açılmış, atlanıyor');
       return; // Zaten açılmış
     }
 
     const newProgress = Math.min(currentProgress, achievement.requirement);
     const unlocked = newProgress >= achievement.requirement;
 
+    console.log('📈 Progress:', newProgress, 'Unlocked:', unlocked);
 
     const updatedAchievements = {
       ...currentAchievements,
@@ -842,6 +880,7 @@ export default function App() {
 
     if (unlocked && (!currentState || !currentState.unlocked)) {
       // Yeni başarım açıldı!
+      console.log('🎉 YENİ BAŞARIM AÇILDI:', achievement.title);
       triggerHaptic('success');
       playSound(correctSound);
       showAchievementToast(achievement);
@@ -901,6 +940,7 @@ export default function App() {
         loadDailyTasks();
       }
     } catch (error) {
+      console.log('Günlük giriş kontrolü hatası:', error);
     }
   };
 
@@ -925,6 +965,7 @@ export default function App() {
         generateDailyTasks();
       }
     } catch (error) {
+      console.log('Günlük görevler yüklenirken hata:', error);
     }
   };
 
@@ -980,6 +1021,7 @@ export default function App() {
       triggerHaptic('success');
       alert('Tüm skorlar ve başarımlar sıfırlandı!');
     } catch (error) {
+      console.log('Skorlar sıfırlanırken hata:', error);
     }
   };
 
@@ -991,6 +1033,7 @@ export default function App() {
       setGameState('menu');
       setTutorialStep(0);
     } catch (error) {
+      console.log('Tutorial tamamlanırken hata:', error);
     }
   };
 
@@ -1496,8 +1539,10 @@ export default function App() {
       if (supported) {
         await Linking.openURL(url);
       } else {
+        console.log("URL açılamıyor: " + url);
       }
     } catch (error) {
+      console.log('Link açılırken hata:', error);
     }
   }, []);
 
