@@ -215,6 +215,121 @@ const COLORS = [
   { id: 'yellow', color: '#FFCC00', name: 'Sarı' },
 ];
 
+// Skin tanımları
+const SKINS = [
+  {
+    id: 'default',
+    name: 'Klasik',
+    colors: ['#FF3B30', '#007AFF', '#34C759', '#FFCC00'],
+    isPremium: false,
+    coinPrice: 0,
+    emoji: '🔵'
+  },
+  {
+    id: 'neon',
+    name: 'Neon',
+    colors: ['#FF00FF', '#00FFFF', '#FFFF00', '#FF0080'],
+    isPremium: false,
+    coinPrice: 100,
+    emoji: '💎'
+  },
+  {
+    id: 'pastel',
+    name: 'Pastel',
+    colors: ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA'],
+    isPremium: false,
+    coinPrice: 150,
+    emoji: '🌸'
+  },
+  {
+    id: 'dark',
+    name: 'Karanlık',
+    colors: ['#1A1A2E', '#16213E', '#0F3460', '#533483'],
+    isPremium: true,
+    coinPrice: 200,
+    emoji: '🌙'
+  },
+  {
+    id: 'rainbow',
+    name: 'Gökkuşağı',
+    colors: ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'],
+    isPremium: true,
+    coinPrice: 250,
+    emoji: '🌈'
+  },
+  {
+    id: 'ocean',
+    name: 'Okyanus',
+    colors: ['#006994', '#0EA5E9', '#22D3EE', '#67E8F9'],
+    isPremium: false,
+    coinPrice: 120,
+    emoji: '🌊'
+  },
+  {
+    id: 'sunset',
+    name: 'Gün Batımı',
+    colors: ['#FF6B35', '#F7931E', '#FDC830', '#F37335'],
+    isPremium: false,
+    coinPrice: 130,
+    emoji: '🌅'
+  },
+  {
+    id: 'forest',
+    name: 'Orman',
+    colors: ['#2D5016', '#3D7C47', '#52B788', '#74C69D'],
+    isPremium: false,
+    coinPrice: 140,
+    emoji: '🌲'
+  },
+  {
+    id: 'candy',
+    name: 'Şeker',
+    colors: ['#FF69B4', '#FF1493', '#FFB6C1', '#FFC0CB'],
+    isPremium: true,
+    coinPrice: 180,
+    emoji: '🍬'
+  },
+  {
+    id: 'galaxy',
+    name: 'Galaksi',
+    colors: ['#2E0854', '#5B0A91', '#8B00FF', '#9D4EDD'],
+    isPremium: true,
+    coinPrice: 220,
+    emoji: '🌌'
+  },
+];
+
+// Power-up tanımları
+const POWERUPS = [
+  {
+    id: 'slowmotion',
+    name: 'Yavaş Çekim',
+    description: 'Topları 10 saniye yavaşlatır',
+    emoji: '⏱️',
+    coinPrice: 50,
+    duration: 10000,
+    effect: 'slowmotion'
+  },
+  {
+    id: 'shield',
+    name: 'Kalkan',
+    description: 'Bir yanlış eşleşmeyi affeder',
+    emoji: '🛡️',
+    coinPrice: 75,
+    duration: null,
+    effect: 'shield'
+  },
+  {
+    id: 'freeze',
+    name: 'Dondur',
+    description: 'Topları 5 saniye dondurur',
+    emoji: '❄️',
+    coinPrice: 60,
+    duration: 5000,
+    effect: 'freeze'
+  },
+];
+
 const BALL_SIZE = 40;
 const INITIAL_SPEED = 2;
 const SPEED_INCREMENT = 0.5;
@@ -240,6 +355,8 @@ export default function App() {
   const [balls, setBalls] = useState([]);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [particles, setParticles] = useState([]); // Parçacık efektleri için
+  // İlk değer: Manuel hesaplama (toplar için), sonra onLayout ile gerçek değer güncellenecek
+  const [boxContainerY, setBoxContainerY] = useState(height - 160 - 95); // scoreBar(95) çıkarılmış
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [modalTitle, setModalTitle] = useState('');
@@ -282,6 +399,20 @@ export default function App() {
   const [continueUsesToday, setContinueUsesToday] = useState(0);
   const [countdown, setCountdown] = useState(0); // Devam etmeden önce geri sayım
 
+  // Skin state'leri
+  const [selectedSkin, setSelectedSkin] = useState('default');
+  const [ownedSkins, setOwnedSkins] = useState(['default']);
+
+  // Power-up state'leri
+  const [powerupInventory, setPowerupInventory] = useState({
+    slowmotion: 0,
+    shield: 0,
+    freeze: 0,
+  });
+  const [activePowerup, setActivePowerup] = useState(null);
+  const [shieldActive, setShieldActive] = useState(false);
+  const powerupTimeoutRef = useRef(null);
+
   const gameLoop = useRef(null);
   const ballIdCounter = useRef(0);
   const spawnTimer = useRef(0);
@@ -304,6 +435,8 @@ export default function App() {
     loadSounds();
     initializeMonetization();
     loadCoins();
+    loadSkins();
+    loadPowerups();
 
     return () => {
       // Cleanup: ses dosyalarını unload et
@@ -541,6 +674,193 @@ export default function App() {
     return false;
   };
 
+  // Skin yükleme ve kaydetme
+  const loadSkins = async () => {
+    try {
+      const savedSkin = await AsyncStorage.getItem('selectedSkin');
+      if (savedSkin) setSelectedSkin(savedSkin);
+
+      const savedOwnedSkins = await AsyncStorage.getItem('ownedSkins');
+      if (savedOwnedSkins) {
+        setOwnedSkins(JSON.parse(savedOwnedSkins));
+      }
+    } catch (error) {
+      console.log('Skin yüklenirken hata:', error);
+    }
+  };
+
+  const saveSkinSelection = async (skinId) => {
+    try {
+      await AsyncStorage.setItem('selectedSkin', skinId);
+      setSelectedSkin(skinId);
+    } catch (error) {
+      console.log('Skin kaydedilirken hata:', error);
+    }
+  };
+
+  const saveOwnedSkinsToStorage = async (skins) => {
+    try {
+      await AsyncStorage.setItem('ownedSkins', JSON.stringify(skins));
+      setOwnedSkins(skins);
+    } catch (error) {
+      console.log('Sahip olunan skinler kaydedilirken hata:', error);
+    }
+  };
+
+  // Power-up yükleme ve kaydetme
+  const loadPowerups = async () => {
+    try {
+      const savedInventory = await AsyncStorage.getItem('powerupInventory');
+      if (savedInventory) {
+        setPowerupInventory(JSON.parse(savedInventory));
+      }
+    } catch (error) {
+      console.log('Power-up yüklenirken hata:', error);
+    }
+  };
+
+  const savePowerupInventory = async (inventory) => {
+    try {
+      await AsyncStorage.setItem('powerupInventory', JSON.stringify(inventory));
+      setPowerupInventory(inventory);
+    } catch (error) {
+      console.log('Power-up envanteri kaydedilirken hata:', error);
+    }
+  };
+
+  // Skin satın alma fonksiyonu
+  const buySkin = async (skinId) => {
+    const skin = SKINS.find(s => s.id === skinId);
+    if (!skin) return;
+
+    // Zaten sahipse
+    if (ownedSkins.includes(skinId)) {
+      Alert.alert('Zaten Sahipsin', 'Bu skine zaten sahipsin.');
+      return;
+    }
+
+    // Premium kontrol
+    if (skin.isPremium && !premiumSkinsOwned) {
+      Alert.alert('Premium Gerekli', 'Bu skin için Premium Skin Paketi satın almalısınız.');
+      return;
+    }
+
+    // Coin kontrol
+    if (coins < skin.coinPrice) {
+      Alert.alert('Yetersiz Coin', `Bu skin için ${skin.coinPrice} coin gerekli. Şu an ${coins} coinin var.`);
+      return;
+    }
+
+    // Satın al
+    const spent = await spendCoins(skin.coinPrice);
+    if (spent) {
+      const newOwnedSkins = [...ownedSkins, skinId];
+      await saveOwnedSkinsToStorage(newOwnedSkins);
+
+      // Otomatik seç
+      await saveSkinSelection(skinId);
+
+      triggerHaptic('success');
+      playSound(clickSound);
+      Alert.alert('Başarılı!', `${skin.name} skini satın alındı ve seçildi!`);
+    }
+  };
+
+  // Skin seçme fonksiyonu
+  const selectSkin = async (skinId) => {
+    if (!ownedSkins.includes(skinId)) {
+      Alert.alert('Hata', 'Bu skine sahip değilsin.');
+      return;
+    }
+
+    await saveSkinSelection(skinId);
+    triggerHaptic('light');
+    playSound(clickSound);
+  };
+
+  // Power-up satın alma fonksiyonu
+  const buyPowerup = async (powerupId) => {
+    const powerup = POWERUPS.find(p => p.id === powerupId);
+    if (!powerup) return;
+
+    if (coins < powerup.coinPrice) {
+      Alert.alert('Yetersiz Coin', `${powerup.coinPrice} coin gerekli. Şu an ${coins} coinin var.`);
+      return;
+    }
+
+    const spent = await spendCoins(powerup.coinPrice);
+    if (spent) {
+      const newInventory = {
+        ...powerupInventory,
+        [powerupId]: (powerupInventory[powerupId] || 0) + 1
+      };
+      await savePowerupInventory(newInventory);
+
+      triggerHaptic('success');
+      playSound(clickSound);
+      Alert.alert('Başarılı!', `${powerup.name} satın alındı!`);
+    }
+  };
+
+  // Power-up kullanma fonksiyonu
+  const usePowerup = async (powerupId) => {
+    const powerup = POWERUPS.find(p => p.id === powerupId);
+    if (!powerup) return;
+
+    if (powerupInventory[powerupId] <= 0) {
+      Alert.alert('Power-up Yok', 'Bu power-up\'tan envanterde yok.');
+      return;
+    }
+
+    // Shield için activePowerup kontrolü yapma (çünkü shield sürekli aktif değil)
+    if (powerup.effect !== 'shield' && activePowerup !== null) {
+      Alert.alert('Power-up Aktif', 'Zaten bir power-up aktif. Bitmesini bekle.');
+      return;
+    }
+
+    // Envanterden düş
+    const newInventory = {
+      ...powerupInventory,
+      [powerupId]: powerupInventory[powerupId] - 1
+    };
+    await savePowerupInventory(newInventory);
+
+    // Efekti aktif et
+    if (powerup.effect === 'slowmotion') {
+      setActivePowerup('slowmotion');
+      triggerHaptic('medium');
+      playSound(clickSound);
+
+      if (powerupTimeoutRef.current) {
+        clearTimeout(powerupTimeoutRef.current);
+      }
+      powerupTimeoutRef.current = setTimeout(() => {
+        setActivePowerup(null);
+      }, powerup.duration);
+    } else if (powerup.effect === 'shield') {
+      setShieldActive(true);
+      triggerHaptic('medium');
+      playSound(clickSound);
+    } else if (powerup.effect === 'freeze') {
+      setActivePowerup('freeze');
+      triggerHaptic('medium');
+      playSound(clickSound);
+
+      if (powerupTimeoutRef.current) {
+        clearTimeout(powerupTimeoutRef.current);
+      }
+      powerupTimeoutRef.current = setTimeout(() => {
+        setActivePowerup(null);
+      }, powerup.duration);
+    }
+  };
+
+  // Seçili skin'in renklerini al
+  const getCurrentSkinColors = () => {
+    const skin = SKINS.find(s => s.id === selectedSkin);
+    return skin ? skin.colors : SKINS[0].colors;
+  };
+
   // Monetizasyon başlatma
   const initializeMonetization = async () => {
     // AdMob başlat
@@ -577,7 +897,23 @@ export default function App() {
         Alert.alert('Başarılı!', 'Reklamlar kaldırıldı! 🎉');
       } else if (productId === IAP_PRODUCT_IDS.premiumSkins) {
         setPremiumSkinsOwned(true);
-        Alert.alert('Başarılı!', 'Premium skin paketi açıldı! 🎨');
+
+        // Tüm premium skinleri aç
+        const premiumSkinIds = SKINS.filter(s => s.isPremium).map(s => s.id);
+        const newOwnedSkins = [...new Set([...ownedSkins, ...premiumSkinIds])];
+        await saveOwnedSkinsToStorage(newOwnedSkins);
+
+        Alert.alert('Başarılı!', 'Premium skin paketi açıldı! Tüm premium skinler açıldı! 🎨');
+      } else if (productId === IAP_PRODUCT_IDS.powerUpPack) {
+        // Power-up paketi: 5 Slow Motion + 5 Shield + 5 Freeze
+        const newInventory = {
+          ...powerupInventory,
+          slowmotion: (powerupInventory.slowmotion || 0) + 5,
+          shield: (powerupInventory.shield || 0) + 5,
+          freeze: (powerupInventory.freeze || 0) + 5,
+        };
+        await savePowerupInventory(newInventory);
+        Alert.alert('Başarılı!', 'Power-up paketi açıldı! 5 Yavaş Çekim + 5 Kalkan + 5 Dondur eklendi! ⚡');
       } else if (productId === IAP_PRODUCT_IDS.coinPackSmall) {
         await addCoins(100);
         Alert.alert('Başarılı!', '100 coin kazandınız! 💰');
@@ -610,6 +946,13 @@ export default function App() {
         const premiumSkins = hasPremiumSkins();
         setAdsRemoved(removedAds);
         setPremiumSkinsOwned(premiumSkins);
+
+        // Premium skinler satın alındıysa, tüm premium skinleri aç
+        if (premiumSkins) {
+          const premiumSkinIds = SKINS.filter(s => s.isPremium).map(s => s.id);
+          const newOwnedSkins = [...new Set([...ownedSkins, ...premiumSkinIds])];
+          await saveOwnedSkinsToStorage(newOwnedSkins);
+        }
 
         Alert.alert('Başarılı!', 'Satın almalarınız geri yüklendi! ✅');
         triggerHaptic('success');
@@ -1035,11 +1378,26 @@ export default function App() {
         return prevBalls;
       }
 
-      const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+      // Seçili skin'in renklerini kullan
+      const skinColors = getCurrentSkinColors();
+      const randomColorHex = skinColors[Math.floor(Math.random() * skinColors.length)];
+
+      // COLORS array'inden eşleşen rengi bul (oyun mekaniği için)
+      const matchingColor = COLORS.find(c => {
+        const skin = SKINS.find(s => s.id === selectedSkin);
+        if (skin && skin.id === 'default') {
+          return c.color === randomColorHex;
+        }
+        return false;
+      });
+
+      // Eğer default skin değilse, renk indexine göre eşleştir
+      const skinColorIndex = skinColors.indexOf(randomColorHex);
+      const gameColor = matchingColor || COLORS[skinColorIndex % COLORS.length];
       const newBall = {
         id: ballIdCounter.current++,
-        colorId: randomColor.id,
-        color: randomColor.color,
+        colorId: gameColor.id,
+        color: randomColorHex,
         x: Math.random() * (width - BALL_SIZE),
         y: -BALL_SIZE,
         fadeAnim: new Animated.Value(1),
@@ -1067,10 +1425,17 @@ export default function App() {
   useEffect(() => {
     if (gameState === 'playing' && !settingsVisible && countdown === 0) {
       gameLoop.current = setInterval(() => {
+        // Freeze efekti aktifse topları dondur
+        if (activePowerup === 'freeze') {
+          return;
+        }
+
         setBalls((prevBalls) => {
           const updatedBalls = prevBalls.map((ball) => {
             let newX = ball.x;
-            let newY = ball.y + speed;
+            // Slow motion efekti - hızı yarıya düşür
+            const currentSpeed = activePowerup === 'slowmotion' ? speed / 2 : speed;
+            let newY = ball.y + currentSpeed;
 
             if (ball.isDirected && ball.targetX !== null) {
               const diff = ball.targetX - ball.x;
@@ -1104,13 +1469,17 @@ export default function App() {
           });
 
           const activeBalls = updatedBalls.filter((ball) => {
-            if (ball.y > height - 120 && ball.isDirected) {
-              return !checkBallReached(ball);
+            // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
+            if (boxContainerY === null) {
+              return true; // Henüz ölçülmemişse topları tut
             }
 
-            if (ball.y > height - 100 && !ball.isDirected) {
-              endGame();
-              return false;
+            // Topun alt hizasını hesapla
+            const ballBottom = ball.y + BALL_SIZE;
+
+            // Çarpışma kontrolü: Top container'a ulaştı mı?
+            if (ballBottom >= boxContainerY) {
+              return !checkBallReached(ball);
             }
 
             return true;
@@ -1140,7 +1509,7 @@ export default function App() {
         }
       };
     }
-  }, [gameState, speed, settingsVisible, countdown]);
+  }, [gameState, speed, settingsVisible, countdown, activePowerup]);
 
   // Top yakalama ve yönlendirme
   const directBall = (ballId, targetColorId, boxIndex) => {
@@ -1181,57 +1550,116 @@ export default function App() {
 
   // Topu kutuya ulaştığında kontrol et
   const checkBallReached = (ball) => {
-    if (ball.y > height - 120 && ball.isDirected) {
-      if (ball.colorId === ball.targetColorId) {
-        // Doğru eşleşme!
-        triggerHaptic('success');
-        playSound(correctSound);
-        createParticles(ball.x, ball.y, ball.color, true);
+    // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
+    if (boxContainerY === null) return false;
 
-        Animated.timing(ball.fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }).start();
+    // Topun alt hizasını hesapla
+    const ballBottom = ball.y + BALL_SIZE;
 
-        setTimeout(() => {
-          setBalls((prev) => prev.filter((b) => b.id !== ball.id));
-        }, 200);
+    // Çarpışma kontrolü
+    if (ballBottom >= boxContainerY) {
+      // Sadece yönlendirilmiş topları kontrol et
+      if (ball.isDirected) {
+        if (ball.colorId === ball.targetColorId) {
+          // Doğru eşleşme - topu kaybet (kutuya girsin)
+          triggerHaptic('success');
+          playSound(correctSound);
+          createParticles(ball.x, ball.y, ball.color, true);
 
-        // Streak güncelle
-        const newStreak = currentStreak + 1;
-        setCurrentStreak(newStreak);
+          Animated.timing(ball.fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
 
-        // İstatistikleri güncelle
-        const newCorrectMatches = totalCorrectMatches + 1;
-        setTotalCorrectMatches(newCorrectMatches);
-        AsyncStorage.setItem('totalCorrectMatches', newCorrectMatches.toString());
+          setTimeout(() => {
+            setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+          }, 200);
 
-        // Streak başarımlarını kontrol et
-        checkAndUnlockAchievement('perfect_10', newStreak);
-        checkAndUnlockAchievement('perfect_20', newStreak);
+          // Streak güncelle
+          const newStreak = currentStreak + 1;
+          setCurrentStreak(newStreak);
 
-        // Günlük görev güncelle
-        updateDailyTask('match_10', newCorrectMatches % 1000);
+          // İstatistikleri güncelle
+          const newCorrectMatches = totalCorrectMatches + 1;
+          setTotalCorrectMatches(newCorrectMatches);
+          AsyncStorage.setItem('totalCorrectMatches', newCorrectMatches.toString());
 
-        setScore((prevScore) => {
-          const newScore = prevScore + 1;
+          // Streak başarımlarını kontrol et
+          checkAndUnlockAchievement('perfect_10', newStreak);
+          checkAndUnlockAchievement('perfect_20', newStreak);
 
-          if (newScore % 5 === 0) {
-            setSpeed((prevSpeed) => prevSpeed + SPEED_INCREMENT);
+          // Günlük görev güncelle
+          updateDailyTask('match_10', newCorrectMatches % 1000);
+
+          setScore((prevScore) => {
+            const newScore = prevScore + 1;
+
+            if (newScore % 5 === 0) {
+              setSpeed((prevSpeed) => prevSpeed + SPEED_INCREMENT);
+            }
+
+            return newScore;
+          });
+
+          return true;
+        } else {
+          // Yanlış eşleşme - Game Over
+          // Shield kontrolü
+          if (shieldActive) {
+            // Shield kullanıldı, oyun bitmesin, topu kaldır
+            setShieldActive(false);
+            triggerHaptic('warning');
+            playSound(clickSound);
+
+            // Topu kaldır
+            Animated.timing(ball.fadeAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+
+            setTimeout(() => {
+              setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+            }, 200);
+
+            // Shield kullanıldı - ekranda gösterge zaten var
+            return true;
+          } else {
+            // Eşleşme yok - Game Over
+            triggerHaptic('error');
+            playSound(wrongSound);
+            createParticles(ball.x, ball.y, ball.color, false);
+            endGame();
+            return true;
           }
-
-          return newScore;
-        });
-
-        return true;
+        }
       } else {
-        // Yanlış renk
-        triggerHaptic('error');
-        playSound(wrongSound);
-        createParticles(ball.x, ball.y, ball.color, false);
-        endGame();
-        return true;
+        // Yönlendirilmemiş top kutuya ulaştı - Game Over
+        if (shieldActive) {
+          // Shield kullanıldı
+          setShieldActive(false);
+          triggerHaptic('warning');
+          playSound(clickSound);
+
+          Animated.timing(ball.fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+
+          setTimeout(() => {
+            setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+          }, 200);
+
+          return true;
+        } else {
+          // Yönlendirilmemiş top - Game Over
+          triggerHaptic('error');
+          playSound(wrongSound);
+          endGame();
+          return true;
+        }
       }
     }
     return false;
@@ -1364,6 +1792,197 @@ export default function App() {
       />
     );
   };
+
+  // Skinler ekranı
+  if (gameState === 'skins') {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <View style={styles.skinContainer}>
+          <View style={styles.skinHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                triggerHaptic('light');
+                playSound(clickSound);
+                setGameState('menu');
+              }}
+            >
+              <Text style={styles.backButtonText}>← Geri</Text>
+            </TouchableOpacity>
+            <Text style={styles.skinTitle}>🎨 Skinler</Text>
+            <View style={styles.coinIndicatorSmall}>
+              <Text style={styles.coinIcon}>💰</Text>
+              <Text style={styles.coinTextSmall}>{coins}</Text>
+            </View>
+          </View>
+
+          <ScrollView
+            style={styles.skinScrollView}
+            contentContainerStyle={styles.skinScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {SKINS.map((skin) => {
+              const isOwned = ownedSkins.includes(skin.id);
+              const isSelected = selectedSkin === skin.id;
+              const isLocked = !isOwned;
+              const isPremiumLocked = skin.isPremium && !premiumSkinsOwned && !isOwned;
+
+              return (
+                <View key={skin.id} style={styles.skinCard}>
+                  <View style={styles.skinCardLeft}>
+                    <Text style={styles.skinEmoji}>{skin.emoji}</Text>
+                    <View style={styles.skinInfo}>
+                      <Text style={styles.skinName}>{skin.name}</Text>
+                      <View style={styles.skinPreview}>
+                        {skin.colors.slice(0, 4).map((color, index) => (
+                          <View
+                            key={index}
+                            style={[styles.colorDot, { backgroundColor: color }]}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.skinCardRight}>
+                    {isSelected ? (
+                      <View style={styles.skinSelectedBadge}>
+                        <Text style={styles.skinSelectedText}>✓ Kullanılıyor</Text>
+                      </View>
+                    ) : isOwned ? (
+                      <TouchableOpacity
+                        style={styles.skinSelectButton}
+                        onPress={() => selectSkin(skin.id)}
+                      >
+                        <Text style={styles.skinSelectText}>Kullan</Text>
+                      </TouchableOpacity>
+                    ) : isPremiumLocked ? (
+                      <View style={styles.skinLockedBadge}>
+                        <Text style={styles.skinLockedText}>🔒 Premium</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.skinBuyButton}
+                        onPress={() => buySkin(skin.id)}
+                      >
+                        <Text style={styles.skinBuyText}>{skin.coinPrice} 💰</Text>
+                        <Text style={styles.skinBuyLabel}>Satın Al</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+
+            {!premiumSkinsOwned && (
+              <View style={styles.premiumPromoBanner}>
+                <Text style={styles.premiumPromoTitle}>🌟 Premium Skin Paketi</Text>
+                <Text style={styles.premiumPromoText}>
+                  Tüm premium skinleri aç!
+                </Text>
+                <TouchableOpacity
+                  style={styles.premiumPromoButton}
+                  onPress={() => setGameState('store')}
+                >
+                  <Text style={styles.premiumPromoButtonText}>Mağazaya Git</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
+  // Power-ups ekranı
+  if (gameState === 'powerups') {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <View style={styles.powerupContainer}>
+          <View style={styles.powerupHeader}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                triggerHaptic('light');
+                playSound(clickSound);
+                setGameState('menu');
+              }}
+            >
+              <Text style={styles.backButtonText}>← Geri</Text>
+            </TouchableOpacity>
+            <Text style={styles.powerupTitle}>⚡ Power-Ups</Text>
+            <View style={styles.coinIndicatorSmall}>
+              <Text style={styles.coinIcon}>💰</Text>
+              <Text style={styles.coinTextSmall}>{coins}</Text>
+            </View>
+          </View>
+
+          <ScrollView
+            style={styles.powerupScrollView}
+            contentContainerStyle={styles.powerupScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {POWERUPS.map((powerup) => {
+              const inventory = powerupInventory[powerup.id] || 0;
+
+              return (
+                <View key={powerup.id} style={styles.powerupCard}>
+                  <View style={styles.powerupCardLeft}>
+                    <Text style={styles.powerupEmoji}>{powerup.emoji}</Text>
+                    <View style={styles.powerupInfo}>
+                      <Text style={styles.powerupName}>{powerup.name}</Text>
+                      <Text style={styles.powerupDescription}>{powerup.description}</Text>
+                      <Text style={styles.powerupInventory}>
+                        Envanter: {inventory} adet
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.powerupCardRight}>
+                    <TouchableOpacity
+                      style={styles.powerupBuyButton}
+                      onPress={() => buyPowerup(powerup.id)}
+                    >
+                      <Text style={styles.powerupBuyPrice}>{powerup.coinPrice} 💰</Text>
+                      <Text style={styles.powerupBuyLabel}>Satın Al</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+
+            <View style={styles.powerupPromoBanner}>
+              <Text style={styles.powerupPromoTitle}>⚡ Power-Up Paketi</Text>
+              <Text style={styles.powerupPromoText}>
+                5 Yavaş Çekim + 5 Kalkan + 5 Dondur
+              </Text>
+              <TouchableOpacity
+                style={styles.powerupPromoButton}
+                onPress={() => setGameState('store')}
+              >
+                <Text style={styles.powerupPromoButtonText}>Mağazaya Git</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.powerupGuideContainer}>
+              <Text style={styles.powerupGuideTitle}>📖 Nasıl Kullanılır?</Text>
+              <Text style={styles.powerupGuideText}>
+                • Power-up'ları satın aldıktan sonra oyun ekranında kullanabilirsiniz
+              </Text>
+              <Text style={styles.powerupGuideText}>
+                • Oyun sırasında üstte bulunan power-up butonlarına basın
+              </Text>
+              <Text style={styles.powerupGuideText}>
+                • Her power-up tek kullanımlıktır, dikkatli kullanın!
+              </Text>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
 
   // Başarımlar ekranı
   if (gameState === 'achievements') {
@@ -1604,7 +2223,7 @@ export default function App() {
                 <View style={styles.storeCardInfo}>
                   <Text style={styles.storeCardTitle}>Premium Skin Paketi</Text>
                   <Text style={styles.storeCardDescription}>
-                    10 özel top skini + 5 tema
+                    Tüm premium skinleri aç
                   </Text>
                 </View>
               </View>
@@ -1628,6 +2247,33 @@ export default function App() {
                   )}
                 </TouchableOpacity>
               )}
+            </View>
+
+            {/* Power-Up Paketi */}
+            <View style={styles.storeCard}>
+              <View style={styles.storeCardHeader}>
+                <Text style={styles.storeCardIcon}>⚡</Text>
+                <View style={styles.storeCardInfo}>
+                  <Text style={styles.storeCardTitle}>Power-Up Paketi</Text>
+                  <Text style={styles.storeCardDescription}>
+                    5 Yavaş Çekim + 5 Kalkan + 5 Dondur
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.storeBuyButton}
+                onPress={() => {
+                  triggerHaptic('medium');
+                  handlePurchase(IAP_PRODUCT_IDS.powerUpPack);
+                }}
+                disabled={iapLoading}
+              >
+                {iapLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.storeBuyButtonText}>$0.99</Text>
+                )}
+              </TouchableOpacity>
             </View>
 
             {/* Coin Paketleri */}
@@ -2007,6 +2653,28 @@ export default function App() {
                 style={styles.menuSecondaryButton}
                 onPress={() => {
                   triggerHaptic('light');
+                  playSound(clickSound);
+                  setGameState('skins');
+                }}
+              >
+                <Text style={styles.menuSecondaryButtonText}>🎨 Skinler</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuSecondaryButton}
+                onPress={() => {
+                  triggerHaptic('light');
+                  playSound(clickSound);
+                  setGameState('powerups');
+                }}
+              >
+                <Text style={styles.menuSecondaryButtonText}>⚡ Power-Ups</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuSecondaryButton}
+                onPress={() => {
+                  triggerHaptic('light');
                   setGameState('achievements');
                 }}
               >
@@ -2210,6 +2878,47 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
+      {/* Power-up butonları */}
+      <View style={styles.powerupButtonsContainer}>
+        {POWERUPS.map((powerup) => {
+          const inventory = powerupInventory[powerup.id] || 0;
+          // Shield için activePowerup kontrolü yapma, diğerleri için yap
+          const isDisabled = inventory === 0 ||
+            (powerup.effect !== 'shield' && activePowerup !== null);
+
+          return (
+            <TouchableOpacity
+              key={powerup.id}
+              style={[
+                styles.powerupGameButton,
+                isDisabled && styles.powerupGameButtonDisabled
+              ]}
+              onPress={() => usePowerup(powerup.id)}
+              disabled={isDisabled}
+            >
+              <Text style={styles.powerupGameEmoji}>{powerup.emoji}</Text>
+              <Text style={styles.powerupGameCount}>{inventory}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Aktif power-up göstergesi */}
+      {activePowerup && (
+        <View style={styles.activePowerupIndicator}>
+          <Text style={styles.activePowerupText}>
+            {POWERUPS.find(p => p.effect === activePowerup)?.emoji} AKTİF
+          </Text>
+        </View>
+      )}
+
+      {/* Shield göstergesi */}
+      {shieldActive && (
+        <View style={styles.shieldIndicator}>
+          <Text style={styles.shieldIndicatorText}>🛡️ Kalkan Aktif</Text>
+        </View>
+      )}
+
       {/* Oyun alanı */}
       <View style={styles.gameArea}>
         {balls.map((ball) => (
@@ -2242,25 +2951,39 @@ export default function App() {
       )}
 
       {/* Renkli kutular - Banner varsa onun üzerinde, yoksa en altta */}
-      <View style={[styles.boxContainer, !adsRemoved && styles.boxContainerAboveBanner]}>
-        {COLORS.map((color, index) => (
-          <TouchableOpacity
-            key={color.id}
-            style={[styles.colorBox, { backgroundColor: color.color }]}
-            activeOpacity={0.7}
-            onPress={() => {
-              const closestBall = balls
-                .filter((b) => !b.isDirected && b.y > 0 && b.y < height - 150)
-                .sort((a, b) => b.y - a.y)[0];
+      <View
+        style={[styles.boxContainer, !adsRemoved && styles.boxContainerAboveBanner]}
+        onLayout={(event) => {
+          const { y } = event.nativeEvent.layout;
+          // scoreBar absolute (95px) olduğu için gameArea koordinatlarına çevir
+          // 50px daha yukarıda çarpışma için
+          const adjustedY = y - 95 - 50;
+          setBoxContainerY(adjustedY);
+        }}
+      >
+        {COLORS.map((color, index) => {
+          // Seçili skin'in renklerini al
+          const skinColors = getCurrentSkinColors();
+          const boxColor = skinColors[index % skinColors.length];
 
-              if (closestBall) {
-                directBall(closestBall.id, color.id, index);
-              }
-            }}
-          >
-            <Text style={styles.boxLabel}>{color.name}</Text>
-          </TouchableOpacity>
-        ))}
+          return (
+            <TouchableOpacity
+              key={color.id}
+              style={[styles.colorBox, { backgroundColor: boxColor }]}
+              activeOpacity={0.7}
+              onPress={() => {
+                const closestBall = balls
+                  .filter((b) => !b.isDirected && b.y > 0 && b.y < height - 150)
+                  .sort((a, b) => b.y - a.y)[0];
+
+                if (closestBall) {
+                  directBall(closestBall.id, color.id, index);
+                }
+              }}
+            >
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -2619,6 +3342,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   scoreBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2627,6 +3354,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
     minHeight: 95, // Sabit yükseklik
+    zIndex: 1100,
+    elevation: 1100,
   },
   scoreItemsContainer: {
     flexDirection: 'row',
@@ -2666,6 +3395,8 @@ const styles = StyleSheet.create({
   gameArea: {
     flex: 1,
     backgroundColor: '#16213e',
+    zIndex: 1,
+    elevation: 1,
   },
   countdownOverlay: {
     position: 'absolute',
@@ -2700,7 +3431,8 @@ const styles = StyleSheet.create({
     width: BALL_SIZE,
     height: BALL_SIZE,
     borderRadius: BALL_SIZE / 2,
-    elevation: 5,
+    zIndex: 1,
+    elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -2717,16 +3449,17 @@ const styles = StyleSheet.create({
     elevation: 600,
   },
   boxContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  boxContainerAboveBanner: {
     position: 'absolute',
-    bottom: 50, // Banner yüksekliği kadar (yaklaşık 50px)
+    bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     zIndex: 500,
     elevation: 500,
+  },
+  boxContainerAboveBanner: {
+    bottom: 50, // Banner yüksekliği kadar (yaklaşık 50px)
   },
   colorBox: {
     flex: 1,
@@ -3183,8 +3916,8 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     backgroundColor: 'transparent',
-    zIndex: 100,
-    elevation: 100, // Android için
+    zIndex: 1000,
+    elevation: 1000, // Android için
   },
   coinEarnedInfo: {
     backgroundColor: 'rgba(255, 204, 0, 0.2)',
@@ -3366,5 +4099,373 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Skin ekranı stilleri
+  skinContainer: {
+    flex: 1,
+    backgroundColor: '#1A1A2E',
+  },
+  skinHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#16213E',
+  },
+  skinTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  coinIndicatorSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  coinTextSmall: {
+    color: '#FFD700',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  skinScrollView: {
+    flex: 1,
+  },
+  skinScrollContent: {
+    padding: 20,
+  },
+  skinCard: {
+    backgroundColor: '#2C3E50',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  skinCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  skinEmoji: {
+    fontSize: 36,
+    marginRight: 15,
+  },
+  skinInfo: {
+    flex: 1,
+  },
+  skinName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  skinPreview: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  colorDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  skinCardRight: {
+    marginLeft: 10,
+  },
+  skinSelectedBadge: {
+    backgroundColor: '#2ECC71',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  skinSelectedText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  skinSelectButton: {
+    backgroundColor: '#3498DB',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+  },
+  skinSelectText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  skinBuyButton: {
+    backgroundColor: '#F39C12',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  skinBuyText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  skinBuyLabel: {
+    color: '#fff',
+    fontSize: 10,
+  },
+  skinLockedBadge: {
+    backgroundColor: '#95A5A6',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  skinLockedText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  premiumPromoBanner: {
+    backgroundColor: '#8E44AD',
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  premiumPromoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  premiumPromoText: {
+    fontSize: 14,
+    color: '#fff',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  premiumPromoButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  premiumPromoButtonText: {
+    color: '#8E44AD',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  // Power-up ekranı stilleri
+  powerupContainer: {
+    flex: 1,
+    backgroundColor: '#1A1A2E',
+  },
+  powerupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#16213E',
+  },
+  powerupTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  powerupScrollView: {
+    flex: 1,
+  },
+  powerupScrollContent: {
+    padding: 20,
+  },
+  powerupCard: {
+    backgroundColor: '#2C3E50',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  powerupCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  powerupInfo: {
+    flex: 1,
+  },
+  powerupName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 3,
+  },
+  powerupDescription: {
+    fontSize: 13,
+    color: '#BDC3C7',
+    marginBottom: 5,
+  },
+  powerupInventory: {
+    fontSize: 12,
+    color: '#3498DB',
+    fontWeight: 'bold',
+  },
+  powerupCardRight: {
+    marginLeft: 10,
+  },
+  powerupBuyButton: {
+    backgroundColor: '#E67E22',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  powerupBuyPrice: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  powerupBuyLabel: {
+    color: '#fff',
+    fontSize: 10,
+  },
+  powerupPromoBanner: {
+    backgroundColor: '#E74C3C',
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  powerupPromoTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 5,
+  },
+  powerupPromoText: {
+    fontSize: 14,
+    color: '#fff',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  powerupPromoButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  powerupPromoButtonText: {
+    color: '#E74C3C',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  powerupGuideContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 20,
+  },
+  powerupGuideTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 10,
+  },
+  powerupGuideText: {
+    fontSize: 13,
+    color: '#BDC3C7',
+    marginBottom: 5,
+  },
+  // Oyun içi power-up butonları
+  powerupButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 125, // scoreBar yüksekliği kadar boşluk + biraz daha
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 1050, // scoreBar'ın altında ama topların üstünde
+    elevation: 1050,
+  },
+  powerupGameButton: {
+    backgroundColor: '#3498DB',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  powerupGameButtonDisabled: {
+    backgroundColor: '#95A5A6',
+    opacity: 0.5,
+    borderColor: '#7F8C8D',
+  },
+  powerupGameEmoji: {
+    fontSize: 24,
+  },
+  powerupGameCount: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: '#E74C3C',
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  activePowerupIndicator: {
+    position: 'absolute',
+    top: 140,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(243, 156, 18, 0.95)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  activePowerupText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  shieldIndicator: {
+    position: 'absolute',
+    top: 190,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(52, 152, 219, 0.95)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  shieldIndicatorText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
