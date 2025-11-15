@@ -1682,42 +1682,6 @@ export default function App() {
   ), [settingsVisible, soundEnabled, musicEnabled, hapticEnabled, highScore, totalGamesPlayed, totalScore, totalCorrectMatches, longestStreak, dailyLoginStreak, handleSoundToggle, handleMusicToggle, handleHapticToggle, closeSettings, restartTutorial, showPrivacyPolicy, showTermsOfService, openLink]);
 
   // Top bileşeni
-  const Ball = ({ ball }) => {
-    return (
-      <Animated.View
-        style={[
-          styles.ball,
-          {
-            backgroundColor: ball.color,
-            left: ball.x,
-            top: ball.y,
-            opacity: ball.fadeAnim,
-            transform: [{ scale: ball.scaleAnim }],
-          },
-        ]}
-      />
-    );
-  };
-
-  // Parçacık bileşeni
-  const Particle = ({ particle }) => {
-    return (
-      <Animated.View
-        style={[
-          styles.particle,
-          {
-            backgroundColor: particle.color,
-            left: particle.x,
-            top: particle.y,
-            width: particle.size,
-            height: particle.size,
-            opacity: particle.opacity,
-          },
-        ]}
-      />
-    );
-  };
-
   // Skinler ekranı
   if (gameState === 'skins') {
     return (
@@ -1761,155 +1725,23 @@ export default function App() {
   // Başarımlar ekranı
   if (gameState === 'achievements') {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.achievementsContainer}>
-          <View style={styles.achievementsHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                triggerHaptic('light');
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.backButtonText}>← Geri</Text>
-            </TouchableOpacity>
-            <Text style={styles.achievementsTitle}>🏆 Başarımlar</Text>
-            <View style={{ width: 60 }} />
-          </View>
-
-          <ScrollView style={styles.achievementsList} showsVerticalScrollIndicator={false}>
-            {ACHIEVEMENTS_LIST.map((achievement) => {
-              const state = achievements[achievement.id] || { unlocked: false, progress: 0 };
-              const percentage = Math.min(100, (state.progress / achievement.requirement) * 100);
-
-              return (
-                <View
-                  key={achievement.id}
-                  style={[
-                    styles.achievementCard,
-                    state.unlocked && styles.achievementCardUnlocked
-                  ]}
-                >
-                  <View style={styles.achievementIcon}>
-                    <Text style={styles.achievementIconText}>
-                      {state.unlocked ? achievement.title.split(' ')[0] : '🔒'}
-                    </Text>
-                  </View>
-                  <View style={styles.achievementInfo}>
-                    <Text style={[
-                      styles.achievementTitle,
-                      !state.unlocked && styles.achievementTitleLocked
-                    ]}>
-                      {achievement.title}
-                    </Text>
-                    <Text style={styles.achievementDescription}>
-                      {achievement.description}
-                    </Text>
-                    {!state.unlocked && (
-                      <View style={styles.achievementProgress}>
-                        <View style={styles.achievementProgressBar}>
-                          <View
-                            style={[
-                              styles.achievementProgressFill,
-                              { width: `${percentage}%` }
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.achievementProgressText}>
-                          {state.progress} / {achievement.requirement}
-                        </Text>
-                      </View>
-                    )}
-                    {state.unlocked && (
-                      <Text style={styles.achievementUnlockedText}>✓ Tamamlandı</Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </View>
+      <AchievementsScreen
+        achievements={achievements}
+        onNavigateMenu={() => setGameState('menu')}
+        onTriggerHaptic={triggerHaptic}
+      />
     );
   }
 
   // Günlük Görevler ekranı
   if (gameState === 'dailyTasks') {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.dailyTasksContainer}>
-          <View style={styles.dailyTasksHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                triggerHaptic('light');
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.backButtonText}>← Geri</Text>
-            </TouchableOpacity>
-            <Text style={styles.dailyTasksTitle}>📋 Günlük Görevler</Text>
-            <View style={{ width: 60 }} />
-          </View>
-
-          <View style={styles.dailyStreakCard}>
-            <Text style={styles.dailyStreakTitle}>🔥 Günlük Giriş Serisi</Text>
-            <Text style={styles.dailyStreakValue}>{dailyLoginStreak} Gün</Text>
-            <Text style={styles.dailyStreakDescription}>
-              Her gün giriş yaparak serinizi artırın!
-            </Text>
-          </View>
-
-          <ScrollView style={styles.dailyTasksList} showsVerticalScrollIndicator={false}>
-            <Text style={styles.tasksHeader}>Bugünün Görevleri</Text>
-            {dailyTasks.length === 0 ? (
-              <View style={styles.noTasksCard}>
-                <Text style={styles.noTasksText}>Henüz görev yok</Text>
-                <Text style={styles.noTasksDescription}>Yarın yeni görevler gelecek!</Text>
-              </View>
-            ) : (
-              dailyTasks.map((task) => (
-                <View
-                  key={task.id}
-                  style={[
-                    styles.taskCard,
-                    task.completed && styles.taskCardCompleted
-                  ]}
-                >
-                  <View style={styles.taskIcon}>
-                    <Text style={styles.taskIconText}>
-                      {task.completed ? '✓' : '○'}
-                    </Text>
-                  </View>
-                  <View style={styles.taskInfo}>
-                    <Text style={[
-                      styles.taskTitle,
-                      task.completed && styles.taskTitleCompleted
-                    ]}>
-                      {task.title}
-                    </Text>
-                    <View style={styles.taskProgress}>
-                      <View style={styles.taskProgressBar}>
-                        <View
-                          style={[
-                            styles.taskProgressFill,
-                            { width: `${Math.min(100, (task.progress / task.target) * 100)}%` }
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.taskProgressText}>
-                        {task.progress} / {task.target}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      </View>
+      <DailyTasksScreen
+        dailyLoginStreak={dailyLoginStreak}
+        dailyTasks={dailyTasks}
+        onNavigateMenu={() => setGameState('menu')}
+        onTriggerHaptic={triggerHaptic}
+      />
     );
   }
 
@@ -1918,755 +1750,105 @@ export default function App() {
     const currentTheme = getCurrentSkinTheme();
 
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.storeContainer}>
-          <View style={styles.storeHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                triggerHaptic('light');
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.backButtonText}>← Geri</Text>
-            </TouchableOpacity>
-            <Text style={styles.storeTitle}>🛒 Mağaza</Text>
-            <View style={styles.coinIndicatorSmall}>
-              <Text style={styles.coinIconSmall}>💰</Text>
-              <Text style={styles.coinTextSmall}>{coins}</Text>
-            </View>
-          </View>
-
-          <ScrollView style={styles.storeList} showsVerticalScrollIndicator={false}>
-            {/* Reklam İzle - Coin Kazan */}
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>📺</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Reklam İzle</Text>
-                  <Text style={styles.storeCardDescription}>25 coin kazan</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.storeWatchAdButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  handleWatchAdForCoins();
-                }}
-              >
-                <Text style={styles.storeWatchAdButtonText}>İZLE</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Reklamsız Versiyon */}
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>🚫</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Reklamsız Versiyon</Text>
-                  <Text style={styles.storeCardDescription}>
-                    Tüm reklamları kaldır
-                  </Text>
-                </View>
-              </View>
-              {adsRemoved ? (
-                <View style={styles.storePurchasedBadge}>
-                  <Text style={styles.storePurchasedText}>✓ Satın Alındı</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.storeBuyButton}
-                  onPress={() => {
-                    triggerHaptic('medium');
-                    handlePurchase(IAP_PRODUCT_IDS.removeAds);
-                  }}
-                  disabled={iapLoading}
-                >
-                  {iapLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.storeBuyButtonText}>$2.99</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Premium Skin Paketi */}
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>🎨</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Premium Skin Paketi</Text>
-                  <Text style={styles.storeCardDescription}>
-                    Tüm premium skinleri aç
-                  </Text>
-                </View>
-              </View>
-              {premiumSkinsOwned ? (
-                <View style={styles.storePurchasedBadge}>
-                  <Text style={styles.storePurchasedText}>✓ Satın Alındı</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.storeBuyButton}
-                  onPress={() => {
-                    triggerHaptic('medium');
-                    handlePurchase(IAP_PRODUCT_IDS.premiumSkins);
-                  }}
-                  disabled={iapLoading}
-                >
-                  {iapLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.storeBuyButtonText}>$1.99</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Power-Up Paketi */}
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>⚡</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Power-Up Paketi</Text>
-                  <Text style={styles.storeCardDescription}>
-                    5 Yavaş Çekim + 5 Kalkan + 5 Dondur
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.storeBuyButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  handlePurchase(IAP_PRODUCT_IDS.powerUpPack);
-                }}
-                disabled={iapLoading}
-              >
-                {iapLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.storeBuyButtonText}>$0.99</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Coin Paketleri */}
-            <Text style={styles.storeSectionTitle}>💰 Coin Paketleri</Text>
-
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>💵</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Küçük Paket</Text>
-                  <Text style={styles.storeCardDescription}>100 coin</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.storeBuyButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  handlePurchase(IAP_PRODUCT_IDS.coinPackSmall);
-                }}
-                disabled={iapLoading}
-              >
-                {iapLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.storeBuyButtonText}>$0.99</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>💴</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Orta Paket</Text>
-                  <Text style={styles.storeCardDescription}>600 coin</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.storeBuyButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  handlePurchase(IAP_PRODUCT_IDS.coinPackMedium);
-                }}
-                disabled={iapLoading}
-              >
-                {iapLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.storeBuyButtonText}>$4.99</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.storeCard}>
-              <View style={styles.storeCardHeader}>
-                <Text style={styles.storeCardIcon}>💸</Text>
-                <View style={styles.storeCardInfo}>
-                  <Text style={styles.storeCardTitle}>Büyük Paket</Text>
-                  <Text style={styles.storeCardDescription}>1500 coin</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.storeBuyButton}
-                onPress={() => {
-                  triggerHaptic('medium');
-                  handlePurchase(IAP_PRODUCT_IDS.coinPackLarge);
-                }}
-                disabled={iapLoading}
-              >
-                {iapLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.storeBuyButtonText}>$9.99</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Satın Almaları Geri Yükle */}
-            <TouchableOpacity
-              style={styles.restorePurchasesButton}
-              onPress={() => {
-                triggerHaptic('light');
-                handleRestorePurchases();
-              }}
-              disabled={iapLoading}
-            >
-              <Text style={styles.restorePurchasesText}>
-                🔄 Satın Almaları Geri Yükle
-              </Text>
-            </TouchableOpacity>
-
-            <View style={{ height: 40 }} />
-          </ScrollView>
-        </View>
-
-        {/* Mağaza Popup */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={shopPurchasePopup.visible}
-          onRequestClose={() => setShopPurchasePopup({ visible: false, message: '' })}
-        >
-          <View style={styles.popupOverlay}>
-            <View style={[styles.popupContainer, { backgroundColor: currentTheme.accentColor }]}>
-              <Text style={styles.popupIcon}>✅</Text>
-              <Text style={[styles.popupMessage, { color: currentTheme.scoreColor }]}>
-                {shopPurchasePopup.message}
-              </Text>
-            </View>
-          </View>
-        </Modal>
-      </View>
+      <StoreScreen
+        coins={coins}
+        adsRemoved={adsRemoved}
+        premiumSkinsOwned={premiumSkinsOwned}
+        iapLoading={iapLoading}
+        currentTheme={currentTheme}
+        shopPurchasePopup={shopPurchasePopup}
+        onNavigateMenu={() => setGameState('menu')}
+        onPurchase={handlePurchase}
+        onRestorePurchases={handleRestorePurchases}
+        onWatchAdForCoins={handleWatchAdForCoins}
+        onCloseShopPopup={() => setShopPurchasePopup({ visible: false, message: '' })}
+        onTriggerHaptic={triggerHaptic}
+      />
     );
   }
 
   // Tutorial ekranı
+  // Tutorial ekranı
   if (gameState === 'tutorial') {
-    const tutorialSteps = [
-      {
-        title: '🎨 Hoş Geldin!',
-        description: 'ColorDrop\'a hoş geldin! Renkli topları doğru kutuyla eşleştireceğin eğlenceli bir oyun.',
-      },
-      {
-        title: '🎯 Nasıl Oynanır?',
-        description: 'Toplar yukarıdan düşer. Bir kutuya dokunarak en alttaki topu o kutuya yönlendir.',
-      },
-      {
-        title: '✅ Doğru Eşleştir',
-        description: 'Top ile kutu rengi aynı olmalı! Her doğru eşleşme 1 puan kazandırır ve oyun hızlanır.',
-      },
-      {
-        title: '❌ Dikkat Et!',
-        description: 'Yanlış renk seçersen veya bir topu kaçırırsan oyun biter. Yüksek skor için dikkatli ol!',
-      },
-    ];
-
-    const currentStep = tutorialSteps[tutorialStep];
-
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.tutorialContainer}>
-          <View style={styles.tutorialContent}>
-            <Text style={styles.tutorialEmoji}>
-              {tutorialStep === 0 && '🎨'}
-              {tutorialStep === 1 && '🎯'}
-              {tutorialStep === 2 && '✅'}
-              {tutorialStep === 3 && '❌'}
-            </Text>
-            <Text style={styles.tutorialTitle}>{currentStep.title}</Text>
-            <Text style={styles.tutorialDescription}>{currentStep.description}</Text>
-
-            <View style={styles.tutorialIndicators}>
-              {tutorialSteps.map((_, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.tutorialIndicator,
-                    index === tutorialStep && styles.tutorialIndicatorActive,
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.tutorialButtons}>
-            {tutorialStep < tutorialSteps.length - 1 ? (
-              <>
-                <TouchableOpacity
-                  style={styles.tutorialSkipButton}
-                  onPress={completeTutorial}
-                >
-                  <Text style={styles.tutorialSkipText}>Atla</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.tutorialNextButton}
-                  onPress={() => {
-                    triggerHaptic('light');
-                    setTutorialStep(tutorialStep + 1);
-                  }}
-                >
-                  <Text style={styles.tutorialNextText}>İleri</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={styles.tutorialStartButton}
-                onPress={completeTutorial}
-              >
-                <Text style={styles.tutorialStartText}>Başla!</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
+      <TutorialScreen
+        tutorialStep={tutorialStep}
+        onCompleteTutorial={completeTutorial}
+        onNextStep={() => setTutorialStep(tutorialStep + 1)}
+        onTriggerHaptic={triggerHaptic}
+      />
     );
   }
-
   // Menü ekranı
   if (gameState === 'menu') {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-
-        {/* Coin göstergesi - sol üst köşe */}
-        <View style={styles.coinIndicator}>
-          <Text style={styles.coinIcon}>💰</Text>
-          <Text style={styles.coinText}>{coins}</Text>
-        </View>
-
-        {/* Ayarlar butonu - sağ üst köşe */}
-        <TouchableOpacity
-          style={styles.settingsIconButton}
-          onPress={openSettings}
-        >
-          <Text style={styles.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
-
-        <ScrollView
-          contentContainerStyle={styles.menuScrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.menuContainer}>
-            <Text style={styles.title}>🎨 ColorDrop</Text>
-            <Text style={styles.subtitle}>Topları doğru renge yönlendir!</Text>
-
-            <View style={styles.highScoreContainer}>
-              <Text style={styles.highScoreLabel}>En Yüksek Skor</Text>
-              <Text style={styles.highScoreValue}>{highScore}</Text>
-            </View>
-
-            <TouchableOpacity style={styles.playButton} onPress={startGame}>
-              <Text style={styles.playButtonText}>OYNA</Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuButtons}>
-              <TouchableOpacity
-                style={styles.menuSecondaryButton}
-                onPress={() => {
-                  triggerHaptic('light');
-                  playSound(clickSound);
-                  setGameState('skins');
-                }}
-              >
-                <Text style={styles.menuSecondaryButtonText}>🎨 Skinler</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSecondaryButton}
-                onPress={() => {
-                  triggerHaptic('light');
-                  playSound(clickSound);
-                  setGameState('powerups');
-                }}
-              >
-                <Text style={styles.menuSecondaryButtonText}>⚡ Power-Ups</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSecondaryButton}
-                onPress={() => {
-                  triggerHaptic('light');
-                  setGameState('achievements');
-                }}
-              >
-                <Text style={styles.menuSecondaryButtonText}>🏆 Başarımlar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSecondaryButton}
-                onPress={() => {
-                  triggerHaptic('light');
-                  setGameState('dailyTasks');
-                }}
-              >
-                <Text style={styles.menuSecondaryButtonText}>📋 Günlük Görevler</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSecondaryButton}
-                onPress={() => {
-                  triggerHaptic('light');
-                  setGameState('store');
-                }}
-              >
-                <Text style={styles.menuSecondaryButtonText}>🛒 Mağaza</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.instructions}>
-              <Text style={styles.instructionText}>📌 Nasıl Oynanır:</Text>
-              <Text style={styles.instructionDetail}>• Toplar yukarıdan düşer</Text>
-              <Text style={styles.instructionDetail}>• Ekrana dokun ve topu doğru kutuya yönlendir</Text>
-              <Text style={styles.instructionDetail}>• Her doğru eşleşme = 1 puan</Text>
-              <Text style={styles.instructionDetail}>• Yanlış renk veya kaçırma = oyun biter</Text>
-              <Text style={styles.instructionDetail}>• Hız giderek artar!</Text>
-            </View>
-
-            <View style={styles.legalLinks}>
-              <TouchableOpacity onPress={showPrivacyPolicy}>
-                <Text style={styles.legalLinkText}>Gizlilik Politikası</Text>
-              </TouchableOpacity>
-              <Text style={styles.legalDivider}>•</Text>
-              <TouchableOpacity onPress={showTermsOfService}>
-                <Text style={styles.legalLinkText}>Kullanım Şartları</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.supportLink}
-              onPress={() => openLink('mailto:support@szrgame.com')}
-            >
-              <Text style={styles.supportLinkText}>📧 Destek: support@szrgame.com</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        {/* Ayarlar Modal */}
-        {SettingsModal}
-
-        {/* Yasal Belgeler Modal */}
-        <Modal
-          animationType="slide"
-          transparent={false}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{modalTitle}</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              {modalContent === 'privacy' ? (
-                <View>
-                  <Text style={styles.modalText}>
-                    {privacyPolicyText}
-                  </Text>
-                </View>
-              ) : (
-                <View>
-                  <Text style={styles.modalText}>
-                    {termsOfServiceText}
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </Modal>
-      </View>
+      <MenuScreen
+        coins={coins}
+        highScore={highScore}
+        modalVisible={modalVisible}
+        modalTitle={modalTitle}
+        modalContent={modalContent}
+        onStartGame={startGame}
+        onNavigate={(screen) => setGameState(screen)}
+        onOpenSettings={openSettings}
+        onShowPrivacyPolicy={showPrivacyPolicy}
+        onShowTermsOfService={showTermsOfService}
+        onOpenLink={openLink}
+        onCloseModal={() => setModalVisible(false)}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+        SettingsModal={SettingsModal}
+      />
     );
   }
-
   // Oyun bitti ekranı
   if (gameState === 'gameOver') {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-
-        {/* Ayarlar Modal */}
-        {SettingsModal}
-
-        <ScrollView
-          style={styles.gameOverScrollView}
-          contentContainerStyle={styles.gameOverScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.gameOverContainer}>
-            <Text style={styles.gameOverTitle}>Oyun Bitti!</Text>
-
-            <View style={styles.scoreCard}>
-              <Text style={styles.finalScoreLabel}>Skorun</Text>
-              <Text style={styles.finalScoreValue}>{score}</Text>
-
-              {score >= highScore && score > 0 && (
-                <Text style={styles.newRecordText}>🎉 YENİ REKOR!</Text>
-              )}
-
-              <View style={styles.divider} />
-
-              <Text style={styles.bestScoreLabel}>En İyi Skorun</Text>
-              <Text style={styles.bestScoreValue}>{highScore}</Text>
-            </View>
-
-            {/* Coin kazanma bilgisi */}
-            <View style={styles.coinEarnedInfo}>
-              <Text style={styles.coinEarnedText}>💰 +{score} coin kazandınız!</Text>
-            </View>
-
-            {/* Kazanılan Başarımlar */}
-            {sessionAchievements.length > 0 && (
-              <View style={styles.achievementsEarnedContainer}>
-                <Text style={styles.achievementsEarnedTitle}>🏆 Kazanılan Başarımlar</Text>
-                {sessionAchievements.map((achievement, index) => (
-                  <View key={`${achievement.id}-${index}`} style={styles.achievementEarnedItem}>
-                    <Text style={styles.achievementEarnedIcon}>{achievement.title.split(' ')[0]}</Text>
-                    <View style={styles.achievementEarnedInfo}>
-                      <Text style={styles.achievementEarnedTitle}>{achievement.title}</Text>
-                      <Text style={styles.achievementEarnedDesc}>{achievement.description}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Rewarded Video - Devam Et */}
-            {continueUsesToday < 3 && isRewardedAdReady() && (
-              <TouchableOpacity
-                style={styles.continueButton}
-                onPress={handleContinueWithAd}
-              >
-                <Text style={styles.continueButtonText}>📺 Reklam İzle ve Devam Et</Text>
-                <Text style={styles.continueButtonSubtext}>({3 - continueUsesToday} hak kaldı)</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity style={styles.restartButton} onPress={startGame}>
-              <Text style={styles.restartButtonText}>🔄 Tekrar Oyna</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuButton}
-              onPress={() => {
-                triggerHaptic('light');
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.menuButtonText}>Ana Menü</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
+      <GameOverScreen
+        score={score}
+        highScore={highScore}
+        sessionAchievements={sessionAchievements}
+        continueUsesToday={continueUsesToday}
+        isRewardedAdReady={isRewardedAdReady}
+        onStartGame={startGame}
+        onNavigateMenu={() => setGameState('menu')}
+        onContinueWithAd={handleContinueWithAd}
+        onTriggerHaptic={triggerHaptic}
+        SettingsModal={SettingsModal}
+      />
     );
   }
-
   // Oyun ekranı
   const currentTheme = getCurrentSkinTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: currentTheme.background }]}>
-      <StatusBar style="light" />
-
-      {/* Ayarlar Modal */}
-      {SettingsModal}
-
-      {/* Skor göstergesi */}
-      <View style={styles.scoreBar}>
-        <View style={styles.scoreItemsContainer}>
-          <View style={styles.scoreItem}>
-            <Text style={[styles.scoreLabel, { color: currentTheme.scoreColor }]}>SKOR</Text>
-            <Text style={[styles.scoreValue, { color: currentTheme.accentColor }]}>{score}</Text>
-          </View>
-          <View style={styles.scoreItem}>
-            <Text style={[styles.scoreLabel, { color: currentTheme.scoreColor }]}>REKOR</Text>
-            <Text style={[styles.scoreValue, { color: currentTheme.accentColor }]}>{highScore}</Text>
-          </View>
-        </View>
-
-        {/* Ayarlar butonu - oyun ekranında */}
-        <TouchableOpacity
-          style={styles.gameSettingsButton}
-          onPress={openSettings}
-        >
-          <Text style={styles.gameSettingsIcon}>⚙️</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Power-up butonları */}
-      <View style={styles.powerupButtonsContainer}>
-        {POWERUPS.map((powerup) => {
-          const inventory = powerupInventory[powerup.id] || 0;
-          // Shield için activePowerup kontrolü yapma, diğerleri için yap
-          const isDisabled = inventory === 0 ||
-            (powerup.effect !== 'shield' && activePowerup !== null);
-
-          return (
-            <TouchableOpacity
-              key={powerup.id}
-              style={[
-                styles.powerupGameButton,
-                { backgroundColor: isDisabled ? currentTheme.boxBackground : currentTheme.accentColor },
-                isDisabled && styles.powerupGameButtonDisabled
-              ]}
-              onPress={() => usePowerup(powerup.id)}
-              disabled={isDisabled}
-            >
-              <Text style={styles.powerupGameEmoji}>{powerup.emoji}</Text>
-              <Text style={[styles.powerupGameCount, { color: currentTheme.scoreColor }]}>{inventory}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Oyun alanı */}
-      <View style={[styles.gameArea, { backgroundColor: currentTheme.background }]}>
-        {balls.map((ball) => (
-          <Ball key={ball.id} ball={ball} />
-        ))}
-        {particles.map((particle) => (
-          <Particle key={particle.id} particle={particle} />
-        ))}
-
-        {/* Countdown overlay */}
-        {countdown > 0 && (
-          <View style={styles.countdownOverlay}>
-            <Text style={[styles.countdownText, { color: currentTheme.accentColor }]}>{countdown}</Text>
-            <Text style={[styles.countdownSubtext, { color: currentTheme.scoreColor }]}>Hazırlan!</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Banner Reklam - En altta, sadece reklamsız değilse göster */}
-      {!adsRemoved && (
-        <View style={styles.bannerAdContainer}>
-          <AdMobBanner
-            unitId={AD_UNIT_IDS.banner}
-            size={BannerAdSize.BANNER}
-            requestOptions={{
-              requestNonPersonalizedAdsOnly: true,
-            }}
-          />
-        </View>
-      )}
-
-      {/* Renkli kutular - Banner varsa onun üzerinde, yoksa en altta */}
-      <View
-        style={[
-          styles.boxContainer,
-          !adsRemoved && styles.boxContainerAboveBanner,
-          { backgroundColor: currentTheme.boxBackground }
-        ]}
-        onLayout={(event) => {
-          const { y } = event.nativeEvent.layout;
-          // scoreBar absolute (95px) olduğu için gameArea koordinatlarına çevir
-          // 50px daha yukarıda çarpışma için
-          const adjustedY = y - 95 - 50;
-          setBoxContainerY(adjustedY);
-        }}
-      >
-        {COLORS.map((color, index) => {
-          // Seçili skin'in renklerini al
-          const skinColors = getCurrentSkinColors();
-          const boxColor = skinColors[index % skinColors.length];
-
-          return (
-            <TouchableOpacity
-              key={color.id}
-              style={[
-                styles.colorBox,
-                {
-                  backgroundColor: boxColor,
-                  borderWidth: 2,
-                  borderColor: currentTheme.boxBorder
-                }
-              ]}
-              activeOpacity={0.7}
-              onPress={() => {
-                const closestBall = balls
-                  .filter((b) => !b.isDirected && b.y > 0 && b.y < height - 150)
-                  .sort((a, b) => b.y - a.y)[0];
-
-                if (closestBall) {
-                  directBall(closestBall.id, color.id, index);
-                }
-              }}
-            >
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Power-up Satın Alma Popup */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={powerupPurchasePopup.visible}
-        onRequestClose={() => setPowerupPurchasePopup({ visible: false, message: '' })}
-      >
-        <View style={styles.popupOverlay}>
-          <View style={[styles.popupContainer, { backgroundColor: currentTheme.accentColor }]}>
-            <Text style={styles.popupIcon}>✅</Text>
-            <Text style={[styles.popupMessage, { color: currentTheme.scoreColor }]}>
-              {powerupPurchasePopup.message}
-            </Text>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Şeffaf Overlay - Power-up Göstergeleri için */}
-      {(activePowerup || shieldActive) && (
-        <View style={styles.powerupIndicatorOverlay} pointerEvents="none">
-          <View style={styles.powerupIndicatorContainer}>
-            {activePowerup && (
-              <View style={[styles.powerupIndicator, { backgroundColor: currentTheme.accentColor }]}>
-                <Text style={[styles.powerupIndicatorText, { color: currentTheme.scoreColor }]}>
-                  {POWERUPS.find(p => p.effect === activePowerup)?.emoji} AKTİF
-                </Text>
-              </View>
-            )}
-            {shieldActive && (
-              <View style={[styles.powerupIndicator, { backgroundColor: currentTheme.accentColor }]}>
-                <Text style={[styles.powerupIndicatorText, { color: currentTheme.scoreColor }]}>🛡️ Kalkan Aktif</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      )}
-    </View>
+    <GameScreen
+      score={score}
+      highScore={highScore}
+      balls={balls}
+      particles={particles}
+      countdown={countdown}
+      adsRemoved={adsRemoved}
+      currentTheme={currentTheme}
+      powerupInventory={powerupInventory}
+      activePowerup={activePowerup}
+      shieldActive={shieldActive}
+      powerupPurchasePopup={powerupPurchasePopup}
+      onOpenSettings={openSettings}
+      onUsePowerup={usePowerup}
+      onDirectBall={directBall}
+      onBoxLayout={(event) => {
+        const { y } = event.nativeEvent.layout;
+        const adjustedY = y - 95 - 50;
+        setBoxContainerY(adjustedY);
+      }}
+      onClosePowerupPopup={() => setPowerupPurchasePopup({ visible: false, message: '' })}
+      getCurrentSkinColors={getCurrentSkinColors}
+      SettingsModal={SettingsModal}
+    />
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
