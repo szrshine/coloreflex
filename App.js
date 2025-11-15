@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -36,386 +36,14 @@ import {
   AD_UNIT_IDS,
   IAP_PRODUCT_IDS,
 } from './monetization';
+import { COLORS } from './src/constants/colors';
+import { SKINS } from './src/constants/skins';
+import { POWERUPS } from './src/constants/powerups';
+import { ACHIEVEMENTS_LIST } from './src/constants/achievements';
+import { privacyPolicyText, termsOfServiceText } from './src/constants/legalText';
+import { BALL_SIZE, INITIAL_SPEED, SPEED_INCREMENT } from './src/constants/gameConfig';
 
 const { width, height } = Dimensions.get('window');
-
-// Gizlilik Politikası Metni
-const privacyPolicyText = `GİZLİLİK POLİTİKASI
-
-Son Güncelleme: 11 Kasım 2025
-
-ColorDrop'a hoş geldiniz. Bu Gizlilik Politikası, mobil oyun uygulamamızı kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı, ifşa ettiğimızı ve koruduğumuzu açıklar.
-
-TOPLANAN BİLGİLER
-
-Otomatik Olarak Toplanan Bilgiler:
-• Cihaz bilgileri (model, işletim sistemi sürümü)
-• Benzersiz cihaz tanımlayıcıları
-• Oyun verileri (skorlar, başarımlar, istatistikler)
-• Kullanım verileri (oturum süreleri)
-• Hata raporları ve çökme günlükleri
-
-Sağladığınız Bilgiler:
-• Kullanıcı profili veya takma ad
-• Liderlik tablosu katılımı
-• Geri bildirimler
-
-BİLGİLERİN KULLANIMI
-
-Topladığımız bilgileri şu amaçlarla kullanırız:
-• Oyunu sağlamak, işletmek ve sürdürmek
-• Oyun deneyiminizi iyileştirmek ve kişiselleştirmek
-• Oyun istatistiklerini ve başarımları izlemek
-• Liderlik tablolarını görüntülemek ve yönetmek
-• Kullanım kalıplarını analiz etmek
-• Teknik sorunları gidermek ve düzeltmek
-
-VERİ DEPOLAMA
-
-Oyun verileriniz cihazınızda yerel olarak AsyncStorage kullanılarak saklanır. Bazı veriler bulut hizmetlerine senkronize edilebilir.
-
-ÜÇÜNCÜ TARAF HİZMETLER
-
-ColorDrop aşağıdaki üçüncü taraf hizmetlerini kullanabilir:
-• Google AdMob - Reklamlar
-• Firebase Analytics - Uygulama kullanımı analizi
-• Sentry - Hata takibi
-• Google Play Games / Apple Game Center - Liderlik tabloları
-
-ÇOCUKLARIN GİZLİLİĞİ
-
-ColorDrop tüm yaşlar için uygundur (3+). 13 yaşın altındaki çocuklardan ebeveyn izni olmadan bilerek kişisel bilgi toplamıyoruz.
-
-HAKLARINIZ
-
-Şunları yapma hakkınız vardır:
-• Hakkınızda tuttuğumuz kişisel bilgilere erişim
-• Yanlış bilgilerin düzeltilmesini talep
-• Bilgilerinizin silinmesini talep
-• Veri toplamayı reddetme
-• İzninizi geri çekme
-
-VERİ GÜVENLİĞİ
-
-Bilgilerinizi yetkisiz erişim, değiştirme, ifşa veya imhadan korumak için makul güvenlik önlemleri uyguluyoruz.
-
-İLETİŞİM
-
-Bu Gizlilik Politikası hakkında sorularınız varsa lütfen bizimle iletişime geçin:
-
-E-posta: support@szrgame.com
-Geliştirici: SZR Game Studios
-Adres: Istanbul, Turkey
-
-UYUMLULUK
-
-Bu Gizlilik Politikası şunlara uygundur:
-• Genel Veri Koruma Yönetmeliği (GDPR)
-• California Tüketici Gizlilik Yasası (CCPA)
-• Çocukların Çevrimiçi Gizlilik Koruma Yasası (COPPA)
-• Apple App Store Yönergeleri
-• Google Play Store Politikaları`;
-
-// Kullanım Şartları Metni
-const termsOfServiceText = `KULLANIM ŞARTLARI
-
-Son Güncelleme: 11 Kasım 2025
-
-HİZMET AÇIKLAMASI
-
-ColorDrop, düşen renkli damlaları doğru renk platformlarıyla eşleştirdiğiniz hızlı tempolu bir renk eşleştirme bulmaca oyunudur.
-
-UYGUNLUK
-
-ColorDrop'u kullanarak şunları beyan edersiniz:
-• En az 13 yaşındasınız veya 13 yaşın altındaysanız ebeveyn/vasi izniniz var
-• Bu Şartları kabul etme yasal kapasitesine sahipsiniz
-• Oyunu yürürlükteki yasalar kapsamında kullanmanız yasak değildir
-
-KULLANICI HESABI VE VERİLERİ
-
-Oyun ilerlemeniz, skorlarınız ve istatistikleriniz cihazınızda yerel olarak saklanır. Cihazınızın güvenliğini sağlamak sizin sorumluluğunuzdur.
-
-KABULEDİLEBİLİR KULLANIM
-
-ŞU DAVRANIŞLARDA BULUNMAMAYI kabul edersiniz:
-• Oyunu değiştirmek, tersine mühendislik yapmak veya kaynak kodunu çıkarmak
-• Hile, istismar, otomasyon yazılımı, botlar veya hack kullanmak
-• Liderlik tablolarını veya başarımları haksız yere manipüle etmek
-• Sahte hesaplar oluşturmak veya başkasının kimliğine bürünmek
-• Oyunu yasadışı amaçlarla kullanmak
-• Oyunun sunucularına veya ağlarına müdahale etmek
-
-FİKRİ MÜLKİYET HAKLARI
-
-ColorDrop ve tüm içeriği, özellikleri ve işlevselliği SZR Game Studios'a aittir ve uluslararası telif hakkı, ticari marka ve diğer fikri mülkiyet yasalarıyla korunmaktadır.
-
-UYGULAMA İÇİ SATIN ALMALAR
-
-Mevcut olduğunda, ColorDrop şunları sunabilir:
-• Premium özellikler
-• Kozmetik öğeler (görünümler, temalar)
-• Güçlendirmeler
-• Sanal para (coinler)
-• Reklam kaldırma
-
-Önemli: Tüm satın almalar kesindir ve iade edilemez (yasa gereği haller hariç).
-
-GARANTİ REDDİ
-
-OYUN "OLDUĞU GİBİ" VE "MEVCUT OLDUĞU ŞEKLİYLE" sağlanır. Şunları garanti etmiyoruz:
-• Oyunun gereksinimlerinizi karşılayacağı
-• Oyunun her zaman kullanılabilir olacağı
-• Hataların veya bugların düzeltileceği
-• Oyunun virüslerden arınmış olduğu
-
-SORUMLULUK SINIRLAMASI
-
-Yasaların izin verdiği azami ölçüde:
-• Dolaylı, arızi, özel veya cezai zararlardan sorumlu değiliz
-• Toplam sorumluluğumuz son 12 ayda bize ödediğiniz tutarı aşmayacaktır
-• Veri, kâr veya iyi niyet kaybından sorumlu değiliz
-
-HİZMET DEĞİŞİKLİKLERİ
-
-Şunları yapma hakkını saklı tutarız:
-• Oyunu istediğimiz zaman değiştirmek veya durdurmak
-• Özellikleri, içeriği veya mekaniği güncellemek
-• Uygulama içi satın almaları değiştirmek veya kaldırmak
-• Fiyatlandırmayı ayarlamak
-
-SONLANDIRMA
-
-Erişiminizi şu durumlarda sonlandırabiliriz:
-• Bu Şartların ihlali
-• Hileli, kötüye kullanılan veya yasadışı faaliyetler
-• Herhangi bir nedenle, kendi takdirimize bağlı olarak
-
-YÖNETİM HUKUKU
-
-Bu Şartlar Türkiye yasalarına tabidir. Anlaşmazlıklar İstanbul mahkemelerinde çözülecektir.
-
-İLETİŞİM
-
-Bu Şartlar hakkında sorular için lütfen bizimle iletişime geçin:
-
-E-posta: support@szrgame.com
-Geliştirici: SZR Game Studios
-Konum: Istanbul, Turkey
-
-ONAY
-
-COLORDROP'U İNDİREREK, YÜKLEYEREK VEYA KULLANARAK, BU KULLANIM ŞARTLARINI OKUDUĞUNUZU, ANLADIĞINIZI VE BUNLARA BAĞLI OLMAYI KABUL ETTİĞİNİZİ BEYAN EDERSİNİZ.`;
-
-const COLORS = [
-  { id: 'red', color: '#FF3B30', name: 'Kırmızı' },
-  { id: 'blue', color: '#007AFF', name: 'Mavi' },
-  { id: 'green', color: '#34C759', name: 'Yeşil' },
-  { id: 'yellow', color: '#FFCC00', name: 'Sarı' },
-];
-
-// Skin tanımları
-const SKINS = [
-  {
-    id: 'default',
-    name: 'Klasik',
-    colors: ['#FF3B30', '#007AFF', '#34C759', '#FFCC00'],
-    isPremium: false,
-    coinPrice: 0,
-    emoji: '🔵',
-    theme: {
-      background: '#1A1A2E',
-      boxBackground: '#2C2C3E',
-      boxBorder: '#3C3C4E',
-      scoreColor: '#FFFFFF',
-      accentColor: '#007AFF'
-    }
-  },
-  {
-    id: 'neon',
-    name: 'Neon',
-    colors: ['#FF00FF', '#00FFFF', '#FFFF00', '#FF0080'],
-    isPremium: false,
-    coinPrice: 100,
-    emoji: '💎',
-    theme: {
-      background: '#0A0A14',
-      boxBackground: '#1A1A28',
-      boxBorder: '#2A2A38',
-      scoreColor: '#00FFFF',
-      accentColor: '#FF00FF'
-    }
-  },
-  {
-    id: 'pastel',
-    name: 'Pastel',
-    colors: ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA'],
-    isPremium: false,
-    coinPrice: 150,
-    emoji: '🌸',
-    theme: {
-      background: '#FFF0F5',
-      boxBackground: '#FFE0E9',
-      boxBorder: '#FFC0CB',
-      scoreColor: '#6B4C5A',
-      accentColor: '#E85D75'
-    }
-  },
-  {
-    id: 'dark',
-    name: 'Karanlık',
-    colors: ['#3A3A5E', '#4A5A7E', '#2F6AB0', '#7A6AC3'],
-    isPremium: true,
-    coinPrice: 200,
-    emoji: '🌙',
-    theme: {
-      background: '#0A0A14',
-      boxBackground: '#1A1A2E',
-      boxBorder: '#2A2A3E',
-      scoreColor: '#AAAACC',
-      accentColor: '#7A6AC3'
-    }
-  },
-  {
-    id: 'rainbow',
-    name: 'Gökkuşağı',
-    colors: ['#FF3030', '#FF9F30', '#FFFF30', '#30FF30', '#3080FF', '#7B30C2', '#B430F3'],
-    isPremium: true,
-    coinPrice: 250,
-    emoji: '🌈',
-    theme: {
-      background: '#1A0A2A',
-      boxBackground: '#2A1A3A',
-      boxBorder: '#3A2A4A',
-      scoreColor: '#FFFF30',
-      accentColor: '#FF9F30'
-    }
-  },
-  {
-    id: 'ocean',
-    name: 'Okyanus',
-    colors: ['#006994', '#0EA5E9', '#22D3EE', '#67E8F9'],
-    isPremium: false,
-    coinPrice: 120,
-    emoji: '🌊',
-    theme: {
-      background: '#001F3F',
-      boxBackground: '#003366',
-      boxBorder: '#004080',
-      scoreColor: '#67E8F9',
-      accentColor: '#0EA5E9'
-    }
-  },
-  {
-    id: 'sunset',
-    name: 'Gün Batımı',
-    colors: ['#FF6B35', '#F7931E', '#FDC830', '#F37335'],
-    isPremium: false,
-    coinPrice: 130,
-    emoji: '🌅',
-    theme: {
-      background: '#2A1810',
-      boxBackground: '#3A2820',
-      boxBorder: '#4A3830',
-      scoreColor: '#FDC830',
-      accentColor: '#FF6B35'
-    }
-  },
-  {
-    id: 'forest',
-    name: 'Orman',
-    colors: ['#4D7C3F', '#5D9C57', '#6DBC78', '#8DD69D'],
-    isPremium: false,
-    coinPrice: 140,
-    emoji: '🌲',
-    theme: {
-      background: '#0F1F0A',
-      boxBackground: '#1F2F1A',
-      boxBorder: '#2F3F2A',
-      scoreColor: '#8DD69D',
-      accentColor: '#6DBC78'
-    }
-  },
-  {
-    id: 'candy',
-    name: 'Şeker',
-    colors: ['#FF69B4', '#FF1493', '#FFB6C1', '#FFC0CB'],
-    isPremium: true,
-    coinPrice: 180,
-    emoji: '🍬',
-    theme: {
-      background: '#3A0A2A',
-      boxBackground: '#4A1A3A',
-      boxBorder: '#5A2A4A',
-      scoreColor: '#FFC0CB',
-      accentColor: '#FF69B4'
-    }
-  },
-  {
-    id: 'galaxy',
-    name: 'Galaksi',
-    colors: ['#5E1A84', '#7B2AB1', '#9B4AFF', '#B86EDD'],
-    isPremium: true,
-    coinPrice: 220,
-    emoji: '🌌',
-    theme: {
-      background: '#0A0014',
-      boxBackground: '#1A0A24',
-      boxBorder: '#2A1A34',
-      scoreColor: '#B86EDD',
-      accentColor: '#9B4AFF'
-    }
-  },
-];
-
-// Power-up tanımları
-const POWERUPS = [
-  {
-    id: 'slowmotion',
-    name: 'Yavaş Çekim',
-    description: 'Topları 10 saniye yavaşlatır',
-    emoji: '⏱️',
-    coinPrice: 50,
-    duration: 10000,
-    effect: 'slowmotion'
-  },
-  {
-    id: 'shield',
-    name: 'Kalkan',
-    description: 'Bir yanlış eşleşmeyi affeder',
-    emoji: '🛡️',
-    coinPrice: 75,
-    duration: null,
-    effect: 'shield'
-  },
-  {
-    id: 'freeze',
-    name: 'Dondur',
-    description: 'Topları 5 saniye dondurur',
-    emoji: '❄️',
-    coinPrice: 60,
-    duration: 5000,
-    effect: 'freeze'
-  },
-];
-
-const BALL_SIZE = 40;
-const INITIAL_SPEED = 2;
-const SPEED_INCREMENT = 0.5;
-
-// Başarımlar (Achievements) tanımları
-const ACHIEVEMENTS_LIST = [
-  { id: 'first_game', title: '🎮 İlk Adım', description: 'İlk oyununu tamamla', requirement: 1, type: 'games' },
-  { id: 'beginner', title: '⭐ Başlangıç Seviyesi', description: '10 puan kazan', requirement: 10, type: 'score' },
-  { id: 'expert', title: '🏆 Uzman', description: '25 puan kazan', requirement: 25, type: 'score' },
-  { id: 'master', title: '👑 Usta', description: '50 puan kazan', requirement: 50, type: 'score' },
-  { id: 'legend', title: '💎 Efsane', description: '100 puan kazan', requirement: 100, type: 'score' },
-  { id: 'perfect_10', title: '✨ Mükemmel 10', description: '10 ardışık doğru eşleşme', requirement: 10, type: 'streak' },
-  { id: 'perfect_20', title: '🔥 Mükemmel 20', description: '20 ardışık doğru eşleşme', requirement: 20, type: 'streak' },
-  { id: 'century', title: '💯 Yüzlük', description: '100 oyun oyna', requirement: 100, type: 'games' },
-  { id: 'dedicated', title: '📅 Bağımlısı', description: 'Üst üste 7 gün giriş yap', requirement: 7, type: 'daily_streak' },
-  { id: 'speed_demon', title: '⚡ Hız Canavarı', description: 'En yüksek hızda 5 doğru eşleşme', requirement: 5, type: 'speed' },
-];
 
 export default function App() {
   const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats, store, dailyTasks
@@ -672,13 +300,13 @@ export default function App() {
   };
 
   // Ayarları kaydet
-  const saveSetting = async (key, value) => {
+  const saveSetting = useCallback(async (key, value) => {
     try {
       await AsyncStorage.setItem(key, value.toString());
     } catch (error) {
       console.log('Ayar kaydedilirken hata:', error);
     }
-  };
+  }, []);
 
   const loadHighScore = async () => {
     try {
@@ -1392,12 +1020,12 @@ export default function App() {
   };
 
   // Tutorial'ı tekrar göster
-  const restartTutorial = () => {
+  const restartTutorial = useCallback(() => {
     setTutorialStep(0);
     setShowTutorial(true);
     setSettingsVisible(false); // Ayarları kapat
     setGameState('tutorial');
-  };
+  }, []);
 
   // Ayarlar menüsünü aç
   const openSettings = () => {
@@ -1413,7 +1041,7 @@ export default function App() {
   };
 
   // Ayarlar menüsünü kapat
-  const closeSettings = () => {
+  const closeSettings = useCallback(() => {
     setSettingsVisible(false);
     triggerHaptic('light');
 
@@ -1422,7 +1050,32 @@ export default function App() {
       // Game loop'u yeniden başlatmak için gameState'i tetikle
       setGameState('playing');
     }
-  };
+  }, [previousGameState]);
+
+  // Switch handler'ları - useCallback ile optimize edilmiş
+  const handleSoundToggle = useCallback((value) => {
+    setSoundEnabled(value);
+    saveSetting('soundEnabled', value);
+    if (hapticEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [hapticEnabled, saveSetting]);
+
+  const handleMusicToggle = useCallback((value) => {
+    setMusicEnabled(value);
+    saveSetting('musicEnabled', value);
+    if (hapticEnabled) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [hapticEnabled, saveSetting]);
+
+  const handleHapticToggle = useCallback((value) => {
+    setHapticEnabled(value);
+    saveSetting('hapticEnabled', value);
+    if (value) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  }, [saveSetting]);
 
   // Oyunu başlat
   const startGame = () => {
@@ -1849,20 +1502,20 @@ export default function App() {
   };
 
   // Yasal belgeleri göster
-  const showPrivacyPolicy = () => {
+  const showPrivacyPolicy = useCallback(() => {
     setModalTitle('Gizlilik Politikası');
     setModalContent('privacy');
     setModalVisible(true);
-  };
+  }, []);
 
-  const showTermsOfService = () => {
+  const showTermsOfService = useCallback(() => {
     setModalTitle('Kullanım Şartları');
     setModalContent('terms');
     setModalVisible(true);
-  };
+  }, []);
 
   // Link açma fonksiyonu
-  const openLink = async (url) => {
+  const openLink = useCallback(async (url) => {
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
@@ -1873,7 +1526,145 @@ export default function App() {
     } catch (error) {
       console.log('Link açılırken hata:', error);
     }
-  };
+  }, []);
+
+  // Ayarlar Modal - useMemo ile optimize edilmiş
+  const SettingsModal = useMemo(() => (
+    <Modal
+      animationType="slide"
+      transparent={false}
+      visible={settingsVisible}
+      onRequestClose={closeSettings}
+    >
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <View style={styles.settingsContainer}>
+          <View style={styles.settingsHeader}>
+            <Text style={styles.settingsTitle}>⚙️ Ayarlar</Text>
+            <TouchableOpacity
+              style={styles.settingsCloseButton}
+              onPress={closeSettings}
+            >
+              <Text style={styles.settingsCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.settingsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>🔊 Ses Efektleri</Text>
+                <Text style={styles.settingDescription}>Oyun seslerini aç/kapat</Text>
+              </View>
+              <Switch
+                value={soundEnabled}
+                onValueChange={handleSoundToggle}
+                trackColor={{ false: '#767577', true: '#34C759' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>🎵 Müzik</Text>
+                <Text style={styles.settingDescription}>Arka plan müziğini aç/kapat</Text>
+              </View>
+              <Switch
+                value={musicEnabled}
+                onValueChange={handleMusicToggle}
+                trackColor={{ false: '#767577', true: '#34C759' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>📳 Titreşim</Text>
+                <Text style={styles.settingDescription}>Haptic feedback aç/kapat</Text>
+              </View>
+              <Switch
+                value={hapticEnabled}
+                onValueChange={handleHapticToggle}
+                trackColor={{ false: '#767577', true: '#34C759' }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.settingButton}
+              onPress={restartTutorial}
+            >
+              <Text style={styles.settingButtonText}>📖 Tutorial'ı Tekrar Göster</Text>
+            </TouchableOpacity>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.sectionTitle}>📊 İstatistikler</Text>
+              <View style={styles.settingsStats}>
+                <Text style={styles.statsText}>En Yüksek Skor: {highScore}</Text>
+                <Text style={styles.statsText}>Toplam Oyun: {totalGamesPlayed}</Text>
+                <Text style={styles.statsText}>Toplam Puan: {totalScore}</Text>
+                <Text style={styles.statsText}>Doğru Eşleşme: {totalCorrectMatches}</Text>
+                <Text style={styles.statsText}>En Uzun Seri: {longestStreak}</Text>
+                <Text style={styles.statsText}>Günlük Giriş Serisi: {dailyLoginStreak} gün</Text>
+              </View>
+            </View>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.sectionTitle}>📜 Yasal</Text>
+              <TouchableOpacity
+                style={styles.settingButton}
+                onPress={() => {
+                  closeSettings();
+                  showPrivacyPolicy();
+                }}
+              >
+                <Text style={styles.settingButtonText}>🔒 Gizlilik Politikası</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.settingButton}
+                onPress={() => {
+                  closeSettings();
+                  showTermsOfService();
+                }}
+              >
+                <Text style={styles.settingButtonText}>📋 Kullanım Şartları</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.settingButton}
+                onPress={() => openLink('mailto:support@szrgame.com')}
+              >
+                <Text style={styles.settingButtonText}>📧 İletişim</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingsSection}>
+              <Text style={styles.sectionTitle}>ℹ️ Hakkında</Text>
+              <View style={styles.aboutSection}>
+                <Text style={styles.aboutText}>ColorDrop v1.0.0</Text>
+                <Text style={styles.aboutText}>SZR Game Studios</Text>
+                <Text style={styles.aboutTextSmall}>Renkli topları eşleştir, rekoru kır!</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.settingButton, styles.dangerButton]}
+              onPress={() => {
+                if (confirm('Tüm skorları, başarımları ve istatistikleri sıfırlamak istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+                  resetAllScores();
+                }
+              }}
+            >
+              <Text style={[styles.settingButtonText, styles.dangerButtonText]}>🗑️ Skorları Sıfırla</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  ), [settingsVisible, soundEnabled, musicEnabled, hapticEnabled, highScore, totalGamesPlayed, totalScore, totalCorrectMatches, longestStreak, dailyLoginStreak, handleSoundToggle, handleMusicToggle, handleHapticToggle, closeSettings, restartTutorial, showPrivacyPolicy, showTermsOfService, openLink]);
 
   // Top bileşeni
   const Ball = ({ ball }) => {
@@ -2612,162 +2403,6 @@ export default function App() {
     );
   }
 
-  // Ayarlar Modal
-  const SettingsModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={false}
-      visible={settingsVisible}
-      onRequestClose={closeSettings}
-    >
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.settingsContainer}>
-          <View style={styles.settingsHeader}>
-            <Text style={styles.settingsTitle}>⚙️ Ayarlar</Text>
-            <TouchableOpacity
-              style={styles.settingsCloseButton}
-              onPress={closeSettings}
-            >
-              <Text style={styles.settingsCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.settingsContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>🔊 Ses Efektleri</Text>
-                <Text style={styles.settingDescription}>Oyun seslerini aç/kapat</Text>
-              </View>
-              <Switch
-                value={soundEnabled}
-                onValueChange={(value) => {
-                  setSoundEnabled(value);
-                  saveSetting('soundEnabled', value);
-                  if (hapticEnabled) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                }}
-                trackColor={{ false: '#767577', true: '#34C759' }}
-                thumbColor="#fff"
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>🎵 Müzik</Text>
-                <Text style={styles.settingDescription}>Arka plan müziğini aç/kapat</Text>
-              </View>
-              <Switch
-                value={musicEnabled}
-                onValueChange={(value) => {
-                  setMusicEnabled(value);
-                  saveSetting('musicEnabled', value);
-                  if (hapticEnabled) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                }}
-                trackColor={{ false: '#767577', true: '#34C759' }}
-                thumbColor="#fff"
-              />
-            </View>
-
-            <View style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>📳 Titreşim</Text>
-                <Text style={styles.settingDescription}>Haptic feedback aç/kapat</Text>
-              </View>
-              <Switch
-                value={hapticEnabled}
-                onValueChange={(value) => {
-                  setHapticEnabled(value);
-                  saveSetting('hapticEnabled', value);
-                  if (value) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  }
-                }}
-                trackColor={{ false: '#767577', true: '#34C759' }}
-                thumbColor="#fff"
-              />
-            </View>
-
-            <TouchableOpacity
-              style={styles.settingButton}
-              onPress={restartTutorial}
-            >
-              <Text style={styles.settingButtonText}>📖 Tutorial'ı Tekrar Göster</Text>
-            </TouchableOpacity>
-
-            <View style={styles.settingsSection}>
-              <Text style={styles.sectionTitle}>📊 İstatistikler</Text>
-              <View style={styles.settingsStats}>
-                <Text style={styles.statsText}>En Yüksek Skor: {highScore}</Text>
-                <Text style={styles.statsText}>Toplam Oyun: {totalGamesPlayed}</Text>
-                <Text style={styles.statsText}>Toplam Puan: {totalScore}</Text>
-                <Text style={styles.statsText}>Doğru Eşleşme: {totalCorrectMatches}</Text>
-                <Text style={styles.statsText}>En Uzun Seri: {longestStreak}</Text>
-                <Text style={styles.statsText}>Günlük Giriş Serisi: {dailyLoginStreak} gün</Text>
-              </View>
-            </View>
-
-            <View style={styles.settingsSection}>
-              <Text style={styles.sectionTitle}>📜 Yasal</Text>
-              <TouchableOpacity
-                style={styles.settingButton}
-                onPress={() => {
-                  closeSettings();
-                  showPrivacyPolicy();
-                }}
-              >
-                <Text style={styles.settingButtonText}>🔒 Gizlilik Politikası</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.settingButton}
-                onPress={() => {
-                  closeSettings();
-                  showTermsOfService();
-                }}
-              >
-                <Text style={styles.settingButtonText}>📋 Kullanım Şartları</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.settingButton}
-                onPress={() => openLink('mailto:support@szrgame.com')}
-              >
-                <Text style={styles.settingButtonText}>📧 İletişim</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.settingsSection}>
-              <Text style={styles.sectionTitle}>ℹ️ Hakkında</Text>
-              <View style={styles.aboutSection}>
-                <Text style={styles.aboutText}>ColorDrop v1.0.0</Text>
-                <Text style={styles.aboutText}>SZR Game Studios</Text>
-                <Text style={styles.aboutTextSmall}>Renkli topları eşleştir, rekoru kır!</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.settingButton, styles.dangerButton]}
-              onPress={() => {
-                if (confirm('Tüm skorları, başarımları ve istatistikleri sıfırlamak istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
-                  resetAllScores();
-                }
-              }}
-            >
-              <Text style={[styles.settingButtonText, styles.dangerButtonText]}>🗑️ Skorları Sıfırla</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-
   // Menü ekranı
   if (gameState === 'menu') {
     return (
@@ -2888,7 +2523,7 @@ export default function App() {
         </ScrollView>
 
         {/* Ayarlar Modal */}
-        <SettingsModal />
+        {SettingsModal}
 
         {/* Yasal Belgeler Modal */}
         <Modal
@@ -2936,7 +2571,7 @@ export default function App() {
         <StatusBar style="light" />
 
         {/* Ayarlar Modal */}
-        <SettingsModal />
+        {SettingsModal}
 
         <ScrollView
           style={styles.gameOverScrollView}
@@ -3019,7 +2654,7 @@ export default function App() {
       <StatusBar style="light" />
 
       {/* Ayarlar Modal */}
-      <SettingsModal />
+      {SettingsModal}
 
       {/* Skor göstergesi */}
       <View style={styles.scoreBar}>
