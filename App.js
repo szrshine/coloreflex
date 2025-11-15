@@ -43,6 +43,21 @@ import { ACHIEVEMENTS_LIST } from './src/constants/achievements';
 import { privacyPolicyText, termsOfServiceText } from './src/constants/legalText';
 import { BALL_SIZE, INITIAL_SPEED, SPEED_INCREMENT } from './src/constants/gameConfig';
 
+// Screen Components
+import MenuScreen from './src/screens/MenuScreen';
+import GameScreen from './src/screens/GameScreen';
+import GameOverScreen from './src/screens/GameOverScreen';
+import TutorialScreen from './src/screens/TutorialScreen';
+import SkinsScreen from './src/screens/SkinsScreen';
+import PowerupsScreen from './src/screens/PowerupsScreen';
+import AchievementsScreen from './src/screens/AchievementsScreen';
+import DailyTasksScreen from './src/screens/DailyTasksScreen';
+import StoreScreen from './src/screens/StoreScreen';
+
+// Game Components
+import Ball from './src/components/game/Ball';
+import Particle from './src/components/game/Particle';
+
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
@@ -1706,102 +1721,19 @@ export default function App() {
   // Skinler ekranı
   if (gameState === 'skins') {
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.skinContainer}>
-          <View style={styles.skinHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                triggerHaptic('light');
-                playSound(clickSound);
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.backButtonText}>← Geri</Text>
-            </TouchableOpacity>
-            <Text style={styles.skinTitle}>🎨 Skinler</Text>
-            <View style={styles.coinIndicatorSmall}>
-              <Text style={styles.coinIcon}>💰</Text>
-              <Text style={styles.coinTextSmall}>{coins}</Text>
-            </View>
-          </View>
-
-          <ScrollView
-            style={styles.skinScrollView}
-            contentContainerStyle={styles.skinScrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {SKINS.map((skin) => {
-              const isOwned = ownedSkins.includes(skin.id);
-              const isSelected = selectedSkin === skin.id;
-              const isLocked = !isOwned;
-              const isPremiumLocked = skin.isPremium && !premiumSkinsOwned && !isOwned;
-
-              return (
-                <View key={skin.id} style={styles.skinCard}>
-                  <View style={styles.skinCardLeft}>
-                    <Text style={styles.skinEmoji}>{skin.emoji}</Text>
-                    <View style={styles.skinInfo}>
-                      <Text style={styles.skinName}>{skin.name}</Text>
-                      <View style={styles.skinPreview}>
-                        {skin.colors.slice(0, 4).map((color, index) => (
-                          <View
-                            key={index}
-                            style={[styles.colorDot, { backgroundColor: color }]}
-                          />
-                        ))}
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.skinCardRight}>
-                    {isSelected ? (
-                      <View style={styles.skinSelectedBadge}>
-                        <Text style={styles.skinSelectedText}>✓ Kullanılıyor</Text>
-                      </View>
-                    ) : isOwned ? (
-                      <TouchableOpacity
-                        style={styles.skinSelectButton}
-                        onPress={() => selectSkin(skin.id)}
-                      >
-                        <Text style={styles.skinSelectText}>Kullan</Text>
-                      </TouchableOpacity>
-                    ) : isPremiumLocked ? (
-                      <View style={styles.skinLockedBadge}>
-                        <Text style={styles.skinLockedText}>🔒 Premium</Text>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        style={styles.skinBuyButton}
-                        onPress={() => buySkin(skin.id)}
-                      >
-                        <Text style={styles.skinBuyText}>{skin.coinPrice} 💰</Text>
-                        <Text style={styles.skinBuyLabel}>Satın Al</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-
-            {!premiumSkinsOwned && (
-              <View style={styles.premiumPromoBanner}>
-                <Text style={styles.premiumPromoTitle}>🌟 Premium Skin Paketi</Text>
-                <Text style={styles.premiumPromoText}>
-                  Tüm premium skinleri aç!
-                </Text>
-                <TouchableOpacity
-                  style={styles.premiumPromoButton}
-                  onPress={() => setGameState('store')}
-                >
-                  <Text style={styles.premiumPromoButtonText}>Mağazaya Git</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
-        </View>
-      </View>
+      <SkinsScreen
+        coins={coins}
+        ownedSkins={ownedSkins}
+        selectedSkin={selectedSkin}
+        premiumSkinsOwned={premiumSkinsOwned}
+        onNavigateMenu={() => setGameState('menu')}
+        onSelectSkin={selectSkin}
+        onBuySkin={buySkin}
+        onNavigateStore={() => setGameState('store')}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+      />
     );
   }
 
@@ -1810,106 +1742,19 @@ export default function App() {
     const currentTheme = getCurrentSkinTheme();
 
     return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <View style={styles.powerupContainer}>
-          <View style={styles.powerupHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                triggerHaptic('light');
-                playSound(clickSound);
-                setGameState('menu');
-              }}
-            >
-              <Text style={styles.backButtonText}>← Geri</Text>
-            </TouchableOpacity>
-            <Text style={styles.powerupTitle}>⚡ Power-Ups</Text>
-            <View style={styles.coinIndicatorSmall}>
-              <Text style={styles.coinIcon}>💰</Text>
-              <Text style={styles.coinTextSmall}>{coins}</Text>
-            </View>
-          </View>
-
-          <ScrollView
-            style={styles.powerupScrollView}
-            contentContainerStyle={styles.powerupScrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {POWERUPS.map((powerup) => {
-              const inventory = powerupInventory[powerup.id] || 0;
-
-              return (
-                <View key={powerup.id} style={styles.powerupCard}>
-                  <View style={styles.powerupCardLeft}>
-                    <Text style={styles.powerupEmoji}>{powerup.emoji}</Text>
-                    <View style={styles.powerupInfo}>
-                      <Text style={styles.powerupName}>{powerup.name}</Text>
-                      <Text style={styles.powerupDescription}>{powerup.description}</Text>
-                      <Text style={styles.powerupInventory}>
-                        Envanter: {inventory} adet
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.powerupCardRight}>
-                    <TouchableOpacity
-                      style={styles.powerupBuyButton}
-                      onPress={() => buyPowerup(powerup.id)}
-                    >
-                      <Text style={styles.powerupBuyPrice}>{powerup.coinPrice} 💰</Text>
-                      <Text style={styles.powerupBuyLabel}>Satın Al</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-
-            <View style={styles.powerupPromoBanner}>
-              <Text style={styles.powerupPromoTitle}>⚡ Power-Up Paketi</Text>
-              <Text style={styles.powerupPromoText}>
-                5 Yavaş Çekim + 5 Kalkan + 5 Dondur
-              </Text>
-              <TouchableOpacity
-                style={styles.powerupPromoButton}
-                onPress={() => setGameState('store')}
-              >
-                <Text style={styles.powerupPromoButtonText}>Mağazaya Git</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.powerupGuideContainer}>
-              <Text style={styles.powerupGuideTitle}>📖 Nasıl Kullanılır?</Text>
-              <Text style={styles.powerupGuideText}>
-                • Power-up'ları satın aldıktan sonra oyun ekranında kullanabilirsiniz
-              </Text>
-              <Text style={styles.powerupGuideText}>
-                • Oyun sırasında üstte bulunan power-up butonlarına basın
-              </Text>
-              <Text style={styles.powerupGuideText}>
-                • Her power-up tek kullanımlıktır, dikkatli kullanın!
-              </Text>
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* Power-up Satın Alma Popup */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={powerupPurchasePopup.visible}
-          onRequestClose={() => setPowerupPurchasePopup({ visible: false, message: '' })}
-        >
-          <View style={styles.popupOverlay}>
-            <View style={[styles.popupContainer, { backgroundColor: currentTheme.accentColor }]}>
-              <Text style={styles.popupIcon}>✅</Text>
-              <Text style={[styles.popupMessage, { color: currentTheme.scoreColor }]}>
-                {powerupPurchasePopup.message}
-              </Text>
-            </View>
-          </View>
-        </Modal>
-      </View>
+      <PowerupsScreen
+        coins={coins}
+        powerupInventory={powerupInventory}
+        currentTheme={currentTheme}
+        powerupPurchasePopup={powerupPurchasePopup}
+        onNavigateMenu={() => setGameState('menu')}
+        onBuyPowerup={buyPowerup}
+        onNavigateStore={() => setGameState('store')}
+        onClosePowerupPopup={() => setPowerupPurchasePopup({ visible: false, message: '' })}
+        onTriggerHaptic={triggerHaptic}
+        onPlaySound={playSound}
+        clickSound={clickSound}
+      />
     );
   }
 
