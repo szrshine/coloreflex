@@ -25,6 +25,7 @@ const GameScreen = ({
   activePowerup,
   shieldActive,
   powerupPurchasePopup,
+  boxContainerY,
 
   // Handlers
   onOpenSettings,
@@ -153,7 +154,7 @@ const GameScreen = ({
               activeOpacity={0.7}
               onPress={() => {
                 const closestBall = balls
-                  .filter((b) => !b.isDirected && b.y > 0 && b.y < height - 150)
+                  .filter((b) => !b.isDirected && b.y > 0 && b.y < boxContainerY - 20)
                   .sort((a, b) => b.y - a.y)[0];
 
                 if (closestBall) {
@@ -227,6 +228,7 @@ const styles = StyleSheet.create({
   scoreItemsContainer: {
     flexDirection: 'row',
     flex: 1,
+    justifyContent: 'center',
   },
   scoreItem: {
     marginRight: 30,
@@ -287,6 +289,7 @@ const styles = StyleSheet.create({
   gameArea: {
     flex: 1,
     position: 'relative',
+    zIndex: 1, // Header ve powerup container'ın altında
   },
   countdownOverlay: {
     position: 'absolute',
@@ -317,24 +320,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A2E',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 400,
+    elevation: 400, // boxContainer'dan düşük ama görünür
   },
   boxContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 160,
+    height: 120, // Kutuların üst kısmına yakın çarpışma için
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingHorizontal: 10,
+    zIndex: 500,
+    elevation: 500, // Android için kutulara tıklanabilmesi için
   },
   boxContainerAboveBanner: {
     bottom: 60,
   },
   colorBox: {
     width: 70,
-    height: 70,
+    height: 100, // Dikey dikdörtgen
     borderRadius: 15,
     elevation: 3,
     shadowColor: '#000',

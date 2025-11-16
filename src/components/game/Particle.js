@@ -27,6 +27,12 @@ const styles = StyleSheet.create({
   particle: {
     position: 'absolute',
     borderRadius: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    zIndex: 1,
+    elevation: 1, // Box container'ın altında
   },
 });
 

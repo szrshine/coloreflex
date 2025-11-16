@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Animated } from 'react-native';
+import { Animated, Dimensions } from 'react-native';
 import { BALL_SIZE, INITIAL_SPEED, SPEED_INCREMENT } from '../constants/gameConfig';
+
+const { width } = Dimensions.get('window');
 
 /**
  * useGameLogic - Oyun mantığı ve akışını yöneten hook
@@ -106,7 +108,7 @@ const useGameLogic = ({
   const spawnBall = () => {
     const skinColors = currentTheme.colors;
     const newBallColor = skinColors[Math.floor(Math.random() * skinColors.length)];
-    const randomX = Math.random() * (400 - BALL_SIZE * 2) + BALL_SIZE;
+    const randomX = Math.random() * (width - BALL_SIZE);
 
     const newBall = {
       id: ballIdCounter.current++,
@@ -114,10 +116,12 @@ const useGameLogic = ({
       y: -BALL_SIZE,
       color: newBallColor,
       colorId: skinColors.indexOf(newBallColor),
+      targetX: null,
       targetColorId: null,
       targetBoxIndex: null,
       directed: false,
       fadeAnim: new Animated.Value(1),
+      scaleAnim: new Animated.Value(1),
     };
 
     setBalls((prev) => [...prev, newBall]);
@@ -128,10 +132,15 @@ const useGameLogic = ({
     setBalls((prevBalls) =>
       prevBalls.map((ball) => {
         if (ball.id === ballId && !ball.directed) {
+          // Hedef kutunun X pozisyonunu hesapla
+          const boxWidth = width / 4; // 4 kutu var
+          const targetX = boxIndex * boxWidth + (boxWidth / 2) - (BALL_SIZE / 2);
+
           return {
             ...ball,
+            targetX,
             targetColorId,
-            targetBoxIndex,
+            targetBoxIndex: boxIndex,
             directed: true,
           };
         }
@@ -140,80 +149,48 @@ const useGameLogic = ({
     );
   };
 
-  // Top hedefe ulaştı mı kontrol et
-  const checkBallReached = (ball) => {
-    if (ball.y >= boxContainerY - BALL_SIZE / 2) {
-      if (ball.directed) {
-        // Renk eşleşmesi kontrol et
-        if (ball.colorId === ball.targetColorId) {
-          // Doğru eşleşme
-          triggerHaptic('light');
-          playSound(successSound);
-          createParticles(ball.x, ball.y, ball.color, true);
+  // Top hedefe ulaştığında çağrılır (çarpışma zaten kontrol edilmiş)
+  const processBallCollision = (ball) => {
+    if (ball.directed) {
+      // Renk eşleşmesi kontrol et
+      if (ball.colorId === ball.targetColorId) {
+        // Doğru eşleşme
+        triggerHaptic('light');
+        playSound(successSound);
+        createParticles(ball.x, ball.y, ball.color, true);
 
-          // Fade out animasyonu
-          Animated.timing(ball.fadeAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
+        // Fade out animasyonu
+        Animated.timing(ball.fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
 
-          setTimeout(() => {
-            setBalls((prev) => prev.filter((b) => b.id !== ball.id));
-          }, 200);
+        setTimeout(() => {
+          setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+        }, 200);
 
-          // Skoru artır
-          setScore((prevScore) => {
-            const newScore = prevScore + 1;
+        // Skoru artır
+        setScore((prevScore) => {
+          const newScore = prevScore + 1;
 
-            if (newScore % 5 === 0) {
-              setSpeed((prevSpeed) => prevSpeed + SPEED_INCREMENT);
-            }
-
-            return newScore;
-          });
-
-          // Stats güncelle
-          setTotalCorrectMatches((prev) => prev + 1);
-          setCurrentStreak((prev) => prev + 1);
-
-          return true;
-        } else {
-          // Yanlış eşleşme - Game Over
-          // Shield kontrolü
-          if (shieldActiveRef.current) {
-            // Shield kullanıldı, oyun bitmesin, topu kaldır
-            setShieldActive(false);
-            shieldActiveRef.current = false;
-            shieldUsedBallsRef.current.add(ball.id);
-            triggerHaptic('warning');
-            playSound(clickSound);
-
-            Animated.timing(ball.fadeAnim, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }).start();
-
-            setTimeout(() => {
-              setBalls((prev) => prev.filter((b) => b.id !== ball.id));
-              shieldUsedBallsRef.current.delete(ball.id);
-            }, 200);
-
-            return true;
-          } else {
-            // Eşleşme yok - Game Over
-            triggerHaptic('error');
-            playSound(wrongSound);
-            createParticles(ball.x, ball.y, ball.color, false);
-            endGame();
-            return true;
+          if (newScore % 5 === 0) {
+            setSpeed((prevSpeed) => prevSpeed + SPEED_INCREMENT);
           }
-        }
+
+          return newScore;
+        });
+
+        // Stats güncelle
+        setTotalCorrectMatches((prev) => prev + 1);
+        setCurrentStreak((prev) => prev + 1);
+
+        return true;
       } else {
-        // Yönlendirilmemiş top kutuya ulaştı - Game Over
+        // Yanlış eşleşme - Game Over
+        // Shield kontrolü
         if (shieldActiveRef.current) {
-          // Shield kullanıldı
+          // Shield kullanıldı, oyun bitmesin, topu kaldır
           setShieldActive(false);
           shieldActiveRef.current = false;
           shieldUsedBallsRef.current.add(ball.id);
@@ -233,15 +210,44 @@ const useGameLogic = ({
 
           return true;
         } else {
-          // Yönlendirilmemiş top - Game Over
+          // Eşleşme yok - Game Over
           triggerHaptic('error');
           playSound(wrongSound);
+          createParticles(ball.x, ball.y, ball.color, false);
           endGame();
           return true;
         }
       }
+    } else {
+      // Yönlendirilmemiş top kutuya ulaştı - Game Over
+      if (shieldActiveRef.current) {
+        // Shield kullanıldı
+        setShieldActive(false);
+        shieldActiveRef.current = false;
+        shieldUsedBallsRef.current.add(ball.id);
+        triggerHaptic('warning');
+        playSound(clickSound);
+
+        Animated.timing(ball.fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+
+        setTimeout(() => {
+          setBalls((prev) => prev.filter((b) => b.id !== ball.id));
+          shieldUsedBallsRef.current.delete(ball.id);
+        }, 200);
+
+        return true;
+      } else {
+        // Yönlendirilmemiş top - Game Over
+        triggerHaptic('error');
+        playSound(wrongSound);
+        endGame();
+        return true;
+      }
     }
-    return false;
   };
 
   // Oyunu başlat
@@ -320,17 +326,50 @@ const useGameLogic = ({
 
       gameLoop.current = setInterval(() => {
         setBalls((prevBalls) => {
-          const updatedBalls = prevBalls.map((ball) => ({
-            ...ball,
-            y: ball.y + currentSpeed,
-          }));
+          const ballsToRemove = new Set();
 
-          // Collision detection
-          updatedBalls.forEach((ball) => {
-            checkBallReached(ball);
+          // Update ball positions
+          const updatedBalls = prevBalls.map((ball) => {
+            // Eğer bu top silinecekse, pozisyon güncelleme
+            if (ballsToRemove.has(ball.id)) {
+              return ball;
+            }
+
+            let newX = ball.x;
+            let newY = ball.y + currentSpeed;
+
+            // Yönlendirilmiş toplar için X hareketi
+            if (ball.directed && ball.targetX !== null) {
+              const diff = ball.targetX - ball.x;
+              const moveSpeed = 8; // Yatay hareket hızı
+
+              if (Math.abs(diff) > 1) {
+                newX = ball.x + Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed);
+              } else {
+                newX = ball.targetX;
+              }
+            }
+
+            // Çarpışma kontrolü
+            const ballBottom = newY + BALL_SIZE;
+            if (ballBottom >= boxContainerY) {
+              // Eğer top hedefe ulaştıysa, işle ve remove set'ine ekle
+              const shouldRemove = processBallCollision({ ...ball, x: newX, y: newY });
+              if (shouldRemove) {
+                ballsToRemove.add(ball.id);
+                return ball; // Pozisyonu güncelleme
+              }
+            }
+
+            return {
+              ...ball,
+              x: newX,
+              y: newY,
+            };
           });
 
-          return updatedBalls;
+          // Sadece silinmeyecek topları tut
+          return updatedBalls.filter((ball) => !ballsToRemove.has(ball.id));
         });
       }, 16); // ~60 FPS
 
@@ -364,7 +403,7 @@ const useGameLogic = ({
     endGame,
     spawnBall,
     directBall,
-    checkBallReached,
+    processBallCollision,
     createParticles,
     setBalls,
     setParticles,

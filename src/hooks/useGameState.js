@@ -1,4 +1,7 @@
 import { useState, useCallback } from 'react';
+import { Dimensions } from 'react-native';
+
+const { height } = Dimensions.get('window');
 
 /**
  * useGameState - Oyun durumu ve UI state yönetimi hook'u
@@ -15,7 +18,9 @@ const useGameState = () => {
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [previousGameState, setPreviousGameState] = useState('menu');
   const [countdown, setCountdown] = useState(0);
-  const [boxContainerY, setBoxContainerY] = useState(0);
+  // Initial value: Daha güvenli başlangıç değeri (reklam var varsayımı ile)
+  // Banner (60) + Box container (120) = 180, ama güvenli olması için 200
+  const [boxContainerY, setBoxContainerY] = useState(height - 180);
 
   // Ayarlar aç
   const openSettings = useCallback(() => {

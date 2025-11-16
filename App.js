@@ -61,6 +61,10 @@ import Particle from './src/components/game/Particle';
 // UI Components
 import SettingsModal from './src/components/ui/SettingsModal';
 
+// Hooks
+import useGameState from './src/hooks/useGameState';
+import useGameLogic from './src/hooks/useGameLogic';
+
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
@@ -70,8 +74,8 @@ export default function App() {
   const [balls, setBalls] = useState([]);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [particles, setParticles] = useState([]); // Parçacık efektleri için
-  // İlk değer: Manuel hesaplama (toplar için), sonra onLayout ile gerçek değer güncellenecek
-  const [boxContainerY, setBoxContainerY] = useState(height - 160 - 95); // scoreBar(95) çıkarılmış
+  // İlk değer: Banner (60) + Box height (120) - offset (65) = 115
+  const [boxContainerY, setBoxContainerY] = useState(height - 115);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState('');
   const [modalTitle, setModalTitle] = useState('');
@@ -1156,7 +1160,7 @@ export default function App() {
 
   // Ana oyun döngüsü
   useEffect(() => {
-    if (gameState === 'playing' && !settingsVisible && countdown === 0) {
+    if (gameState === 'playing' && !settingsVisible && countdown === 0 && boxContainerY > 0) {
       gameLoop.current = setInterval(() => {
         // Freeze efekti aktifse topları dondur
         if (activePowerup === 'freeze') {
@@ -1164,7 +1168,14 @@ export default function App() {
         }
 
         setBalls((prevBalls) => {
+          const ballsToRemove = new Set();
+
           const updatedBalls = prevBalls.map((ball) => {
+            // Eğer bu top silinecekse, pozisyon güncelleme
+            if (ballsToRemove.has(ball.id)) {
+              return ball;
+            }
+
             let newX = ball.x;
             // Slow motion efekti - hızı yarıya düşür
             const currentSpeed = activePowerup === 'slowmotion' ? speed / 2 : speed;
@@ -1172,7 +1183,7 @@ export default function App() {
 
             if (ball.isDirected && ball.targetX !== null) {
               const diff = ball.targetX - ball.x;
-              const moveSpeed = 80;
+              const moveSpeed = 1500; // Anında hedef konuma gider
 
               if (Math.abs(diff) > 1) {
                 newX = ball.x + Math.sign(diff) * Math.min(Math.abs(diff), moveSpeed);
@@ -1181,6 +1192,7 @@ export default function App() {
               }
             }
 
+            // Topların birbirine çarpmasını önle
             const sortedBalls = prevBalls
               .filter((b) => b.id !== ball.id && b.y > ball.y)
               .sort((a, b) => a.y - b.y);
@@ -1194,6 +1206,16 @@ export default function App() {
               }
             }
 
+            // Çarpışma kontrolü - BURADA yap, filter'da değil
+            const ballBottom = newY + BALL_SIZE;
+            if (ballBottom >= boxContainerY) {
+              const shouldRemove = checkBallReached({ ...ball, x: newX, y: newY });
+              if (shouldRemove) {
+                ballsToRemove.add(ball.id);
+                return ball; // Pozisyonu güncelleme
+              }
+            }
+
             return {
               ...ball,
               x: newX,
@@ -1201,24 +1223,8 @@ export default function App() {
             };
           });
 
-          const activeBalls = updatedBalls.filter((ball) => {
-            // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
-            if (boxContainerY === null) {
-              return true; // Henüz ölçülmemişse topları tut
-            }
-
-            // Topun alt hizasını hesapla
-            const ballBottom = ball.y + BALL_SIZE;
-
-            // Çarpışma kontrolü: Top container'a ulaştı mı?
-            if (ballBottom >= boxContainerY) {
-              return !checkBallReached(ball);
-            }
-
-            return true;
-          });
-
-          return activeBalls;
+          // Sadece silinmeyecek topları tut
+          return updatedBalls.filter((ball) => !ballsToRemove.has(ball.id));
         });
 
         // Parçacık animasyonu
@@ -1242,7 +1248,7 @@ export default function App() {
         }
       };
     }
-  }, [gameState, speed, settingsVisible, countdown, activePowerup]);
+  }, [gameState, speed, settingsVisible, countdown, activePowerup, boxContainerY]);
 
   // Top yakalama ve yönlendirme
   const directBall = (ballId, targetColorId, boxIndex) => {
@@ -1282,23 +1288,15 @@ export default function App() {
     });
   };
 
-  // Topu kutuya ulaştığında kontrol et
+  // Topu kutuya ulaştığında kontrol et (çarpışma zaten kontrol edilmiş)
   const checkBallReached = (ball) => {
-    // onLayout ile ölçülmüş GERÇEK pozisyonu kullan
-    if (boxContainerY === null) return false;
-
     // Shield ile zaten işaretlenmiş bir top mu kontrol et
     if (shieldUsedBallsRef.current.has(ball.id)) {
       return false; // Bu topu tekrar kontrol etme
     }
 
-    // Topun alt hizasını hesapla
-    const ballBottom = ball.y + BALL_SIZE;
-
-    // Çarpışma kontrolü
-    if (ballBottom >= boxContainerY) {
-      // Sadece yönlendirilmiş topları kontrol et
-      if (ball.isDirected) {
+    // Sadece yönlendirilmiş topları kontrol et
+    if (ball.isDirected) {
         // Index bazlı eşleştirme (skinler için)
         const isMatch = ball.colorIndex === ball.targetColorIndex;
         if (isMatch) {
@@ -1408,8 +1406,6 @@ export default function App() {
           return true;
         }
       }
-    }
-    return false;
   };
 
   // Oyunu bitir
@@ -1679,12 +1675,22 @@ export default function App() {
       activePowerup={activePowerup}
       shieldActive={shieldActive}
       powerupPurchasePopup={powerupPurchasePopup}
+      boxContainerY={boxContainerY}
       onOpenSettings={openSettings}
       onUsePowerup={usePowerup}
       onDirectBall={directBall}
       onBoxLayout={(event) => {
-        const { y } = event.nativeEvent.layout;
-        const adjustedY = y - 95 - 50;
+        const { height: boxHeight } = event.nativeEvent.layout;
+        // Box container position: absolute, bottom: 0 veya bottom: 60
+        // Global Y = screen height - bottom offset - box height
+        const bottomOffset = adsRemoved ? 0 : 60; // Banner yüksekliği
+        const globalY = height - bottomOffset - boxHeight;
+        // Container height: 120, colorBox height: 100, alignItems: center
+        // Kutular container içinde 10px aşağıda başlıyor
+        // Offset: container padding (10) + kutu içine girme (color box height'ın %55'i)
+        const containerPadding = (boxHeight - 100) / 2; // alignItems center padding
+        const penetrationOffset = 100 * 0.55; // Color box height'ın %55'i
+        const adjustedY = globalY + containerPadding + penetrationOffset;
         setBoxContainerY(adjustedY);
       }}
       onClosePowerupPopup={() => setPowerupPurchasePopup({ visible: false, message: '' })}
