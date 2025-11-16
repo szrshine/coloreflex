@@ -1,0 +1,156 @@
+{
+  "app_info": {
+    "name": "ColorDrop",
+    "bundle_id": "com.szrgame.colordrop",
+    "sku": "colordrop-001",
+    "primary_language": "en-US",
+    "version": "1.0.0",
+    "build_number": "1"
+  },
+  "categories": {
+    "primary": "Games - Puzzle",
+    "secondary": "Games - Arcade"
+  },
+  "age_rating": {
+    "rating": "4+",
+    "violence": "None",
+    "sexual_content": "None",
+    "profanity": "None",
+    "gambling": "None",
+    "unrestricted_web_access": "No"
+  },
+  "metadata": {
+    "subtitle": "Fast Color Matching Game",
+    "promotional_text": "New features: Power-ups, daily challenges, and customizable themes! Match colors, beat your high score, and climb the global leaderboard!",
+    "description": "Match the Colors, Beat the Clock!\n\nColorDrop is an addictive color-matching puzzle game that challenges your reflexes and concentration. Watch colorful balls fall from the sky and tap the matching color bar to score points. Simple to learn, hard to master!\n\n🎯 HOW TO PLAY\n• Watch the falling colored balls\n• Tap the matching color bar at the bottom\n• Score points for correct matches\n• Avoid wrong matches or you'll lose lives\n• Beat your high score and climb the leaderboard!\n\n✨ FEATURES\n• Simple, intuitive one-tap gameplay\n• Beautiful, vibrant graphics\n• Increasing difficulty as you progress\n• Global leaderboards - compete worldwide\n• Daily, weekly, and monthly rankings\n• Achievements system\n• Multiple game modes\n• Power-ups to boost your score\n• Customizable themes and skins\n• Offline play supported\n• No time limits - play at your own pace\n• Perfect for quick gaming sessions\n\n🎨 CUSTOMIZATION\n• 10+ unique ball skins\n• Multiple color themes\n• Unlock new content as you play\n\n🏆 COMPETE & ACHIEVE\n• Global leaderboards\n• 20+ achievements to unlock\n• Track your statistics\n• Share your scores with friends\n\n🎮 GAME MODES\n• Classic Mode: Traditional gameplay\n• Time Attack: Race against the clock\n• Endless Mode: How long can you survive?\n\n💎 POWER-UPS\n• Slow Motion: Slow down time\n• Shield: Protect from mistakes\n• Freeze: Stop balls mid-air\n• Bonus Points: Double your score\n\nPerfect for:\n✓ Quick coffee break gaming\n✓ Daily commute entertainment\n✓ Improving hand-eye coordination\n✓ Casual and hardcore gamers\n✓ All ages (4+)\n\nDownload ColorDrop now and start matching! Can you reach the top of the leaderboard?\n\nNO ADS OPTION AVAILABLE\nEnjoy ad-free gaming with our one-time purchase option.\n\nSUPPORT\nHaving issues or feedback? Contact us at support@szrgame.com\n\nFollow us for updates and new features!",
+    "keywords": "color,match,puzzle,casual,game,reflex,brain,quick,drop,fall,arcade,addictive,fun",
+    "whats_new": "Welcome to ColorDrop!\n\n• Fast-paced color matching gameplay\n• Global leaderboards\n• 20+ achievements\n• Multiple game modes\n• Power-ups and customization\n• Daily challenges\n• Beautiful graphics and smooth animations\n\nThank you for downloading! We'd love to hear your feedback."
+  },
+  "urls": {
+    "privacy_policy": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/privacy-policy.md",
+    "support": "https://github.com/szrshine/ColorDrop",
+    "marketing": "https://github.com/szrshine/ColorDrop"
+  },
+  "contact": {
+    "email": "support@szrgame.com",
+    "developer_name": "SZR Game Studios"
+  },
+  "pricing": {
+    "price": "Free",
+    "availability": "All countries"
+  },
+  "in_app_purchases": [
+    {
+      "id": "colordrop.removeads",
+      "name": "Remove Ads",
+      "price": 2.99,
+      "type": "non_consumable",
+      "description": "Remove all banner and interstitial ads. Enjoy uninterrupted gameplay!"
+    },
+    {
+      "id": "colordrop.premiumskins",
+      "name": "Premium Skin Pack",
+      "price": 1.99,
+      "type": "non_consumable",
+      "description": "Unlock 10 exclusive premium ball skins and 5 unique background themes!"
+    },
+    {
+      "id": "colordrop.powerups.5",
+      "name": "Power-Up Pack (5x)",
+      "price": 0.99,
+      "type": "consumable",
+      "description": "Get 5 of each power-up: Slow Motion, Shield, and Freeze!"
+    },
+    {
+      "id": "colordrop.coins.small",
+      "name": "Coin Pack - Small",
+      "price": 0.99,
+      "type": "consumable",
+      "description": "100 coins to spend on skins and power-ups!"
+    },
+    {
+      "id": "colordrop.coins.medium",
+      "name": "Coin Pack - Medium",
+      "price": 4.99,
+      "type": "consumable",
+      "description": "600 coins - Best value!"
+    },
+    {
+      "id": "colordrop.coins.large",
+      "name": "Coin Pack - Large",
+      "price": 9.99,
+      "type": "consumable",
+      "description": "1500 coins - Premium pack!"
+    }
+  ],
+  "app_review_info": {
+    "sign_in_required": false,
+    "notes": "ColorDrop is a simple color-matching puzzle game. No sign-in required. Just download and start playing immediately. All features are accessible from the main menu. AdMob ads are integrated (banner and interstitial). In-app purchases available for ad removal and cosmetic items.",
+    "demo_account": null
+  },
+  "screenshot_requirements": {
+    "6.7_inch": {
+      "size": "1290x2796",
+      "quantity": "6-10",
+      "format": "PNG or JPEG"
+    },
+    "6.5_inch": {
+      "size": "1242x2688",
+      "quantity": "6-10",
+      "format": "PNG or JPEG"
+    },
+    "5.5_inch": {
+      "size": "1242x2208",
+      "quantity": "6-10",
+      "format": "PNG or JPEG"
+    },
+    "ipad_pro": {
+      "size": "2048x2732",
+      "quantity": "6-10",
+      "format": "PNG or JPEG",
+      "optional": true
+    }
+  },
+  "screenshot_plan": [
+    {
+      "number": 1,
+      "title": "Welcome to ColorDrop!",
+      "content": "Main Menu with logo and start button"
+    },
+    {
+      "number": 2,
+      "title": "Match Falling Colors",
+      "content": "Gameplay showing balls falling with score"
+    },
+    {
+      "number": 3,
+      "title": "Build Combos",
+      "content": "Perfect match with combo/streak animation"
+    },
+    {
+      "number": 4,
+      "title": "Compete Globally",
+      "content": "Leaderboard screen with rankings"
+    },
+    {
+      "number": 5,
+      "title": "Unlock Achievements",
+      "content": "Achievements screen showing progress"
+    },
+    {
+      "number": 6,
+      "title": "Boost Your Score",
+      "content": "Power-ups selection screen"
+    },
+    {
+      "number": 7,
+      "title": "Customize Your Game",
+      "content": "Skins and themes selection"
+    },
+    {
+      "number": 8,
+      "title": "Beat Your High Score!",
+      "content": "Game Over screen with stats"
+    }
+  ]
+}

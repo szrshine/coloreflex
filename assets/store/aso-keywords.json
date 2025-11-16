@@ -1,0 +1,357 @@
+{
+  "primary_keywords": {
+    "high_volume": [
+      {
+        "keyword": "color match",
+        "volume": "high",
+        "difficulty": "high",
+        "relevance": 10,
+        "priority": 1
+      },
+      {
+        "keyword": "puzzle game",
+        "volume": "very high",
+        "difficulty": "very high",
+        "relevance": 9,
+        "priority": 2
+      },
+      {
+        "keyword": "color game",
+        "volume": "high",
+        "difficulty": "high",
+        "relevance": 10,
+        "priority": 1
+      },
+      {
+        "keyword": "casual game",
+        "volume": "very high",
+        "difficulty": "very high",
+        "relevance": 8,
+        "priority": 3
+      },
+      {
+        "keyword": "arcade game",
+        "volume": "high",
+        "difficulty": "high",
+        "relevance": 8,
+        "priority": 3
+      }
+    ],
+    "medium_volume": [
+      {
+        "keyword": "reflex game",
+        "volume": "medium",
+        "difficulty": "medium",
+        "relevance": 9,
+        "priority": 2
+      },
+      {
+        "keyword": "brain game",
+        "volume": "medium",
+        "difficulty": "medium",
+        "relevance": 7,
+        "priority": 4
+      },
+      {
+        "keyword": "quick game",
+        "volume": "medium",
+        "difficulty": "low",
+        "relevance": 8,
+        "priority": 3
+      },
+      {
+        "keyword": "drop game",
+        "volume": "medium",
+        "difficulty": "low",
+        "relevance": 10,
+        "priority": 1
+      },
+      {
+        "keyword": "match game",
+        "volume": "medium",
+        "difficulty": "medium",
+        "relevance": 9,
+        "priority": 2
+      }
+    ],
+    "long_tail": [
+      {
+        "keyword": "color matching puzzle",
+        "volume": "low",
+        "difficulty": "low",
+        "relevance": 10,
+        "priority": 1,
+        "note": "Perfect match for our game"
+      },
+      {
+        "keyword": "fast paced puzzle",
+        "volume": "low",
+        "difficulty": "low",
+        "relevance": 9,
+        "priority": 2
+      },
+      {
+        "keyword": "addictive color game",
+        "volume": "low",
+        "difficulty": "low",
+        "relevance": 10,
+        "priority": 1
+      },
+      {
+        "keyword": "quick casual game",
+        "volume": "low",
+        "difficulty": "low",
+        "relevance": 8,
+        "priority": 3
+      },
+      {
+        "keyword": "brain training game",
+        "volume": "low",
+        "difficulty": "medium",
+        "relevance": 6,
+        "priority": 5
+      },
+      {
+        "keyword": "reflex training",
+        "volume": "low",
+        "difficulty": "low",
+        "relevance": 8,
+        "priority": 3
+      },
+      {
+        "keyword": "color drop game",
+        "volume": "very low",
+        "difficulty": "very low",
+        "relevance": 10,
+        "priority": 1,
+        "note": "Brand-specific, low competition"
+      }
+    ]
+  },
+  "competitor_keywords": {
+    "color_switch": [
+      "color switch",
+      "color tap",
+      "color obstacle",
+      "rhythm game"
+    ],
+    "ballz": [
+      "ballz game",
+      "brick breaker",
+      "ball physics"
+    ],
+    "stack_ball": [
+      "stack ball",
+      "smash game",
+      "tower destroy"
+    ],
+    "helix_jump": [
+      "helix jump",
+      "spiral jump",
+      "bounce game"
+    ],
+    "color_bump_3d": [
+      "color bump",
+      "3d color game",
+      "color rush"
+    ]
+  },
+  "negative_keywords": [
+    "coloring book",
+    "paint",
+    "drawing",
+    "art",
+    "shooter",
+    "violent",
+    "racing",
+    "car game"
+  ],
+  "keyword_placement": {
+    "app_name_ios": {
+      "primary": "ColorDrop",
+      "subtitle": "Fast Color Matching Game",
+      "total_chars": 30,
+      "keywords_used": [
+        "color",
+        "matching",
+        "game"
+      ]
+    },
+    "app_name_android": {
+      "title": "ColorDrop - Color Match Game",
+      "total_chars": 30,
+      "keywords_used": [
+        "color",
+        "match",
+        "game"
+      ]
+    },
+    "short_description": {
+      "text": "Fast-paced color matching puzzle game. Match drops and beat your high score!",
+      "keywords_used": [
+        "fast-paced",
+        "color",
+        "matching",
+        "puzzle",
+        "game"
+      ]
+    },
+    "description_first_paragraph": {
+      "keywords_to_include": [
+        "color-matching",
+        "puzzle game",
+        "reflexes",
+        "addictive"
+      ],
+      "priority": "very high",
+      "note": "First 2-3 sentences are most important for ASO"
+    }
+  },
+  "keyword_density_targets": {
+    "color": {
+      "target_count": 8,
+      "max_count": 12,
+      "note": "Primary keyword, use naturally"
+    },
+    "match": {
+      "target_count": 6,
+      "max_count": 10
+    },
+    "puzzle": {
+      "target_count": 5,
+      "max_count": 8
+    },
+    "game": {
+      "target_count": 10,
+      "max_count": 15
+    },
+    "reflex": {
+      "target_count": 2,
+      "max_count": 4
+    },
+    "casual": {
+      "target_count": 2,
+      "max_count": 4
+    },
+    "arcade": {
+      "target_count": 2,
+      "max_count": 3
+    }
+  },
+  "localization_keywords": {
+    "turkish": {
+      "primary": [
+        "renk eşleştir",
+        "bulmaca oyunu",
+        "renkli top",
+        "zeka oyunu",
+        "hızlı oyun"
+      ],
+      "note": "To be implemented in future update"
+    },
+    "spanish": {
+      "primary": [
+        "juego de colores",
+        "emparejar colores",
+        "puzzle de colores",
+        "juego casual",
+        "juego arcade"
+      ],
+      "note": "High priority for localization"
+    },
+    "portuguese": {
+      "primary": [
+        "jogo de cores",
+        "combinar cores",
+        "quebra-cabeça",
+        "jogo casual",
+        "jogo arcade"
+      ],
+      "note": "Brazilian market priority"
+    }
+  },
+  "seasonal_keywords": {
+    "note": "Update promotional text with seasonal keywords",
+    "christmas": [
+      "holiday game",
+      "christmas game"
+    ],
+    "summer": [
+      "summer game",
+      "beach game"
+    ],
+    "back_to_school": [
+      "brain training",
+      "concentration game"
+    ]
+  },
+  "aso_strategy": {
+    "phase_1_launch": {
+      "focus": "Long-tail keywords with low competition",
+      "target_keywords": [
+        "color matching puzzle",
+        "addictive color game",
+        "quick casual game",
+        "color drop game"
+      ],
+      "rationale": "Easier to rank initially, build momentum"
+    },
+    "phase_2_growth": {
+      "focus": "Medium competition keywords",
+      "target_keywords": [
+        "reflex game",
+        "drop game",
+        "match game",
+        "quick game"
+      ],
+      "rationale": "Expand reach after initial traction"
+    },
+    "phase_3_scale": {
+      "focus": "High competition keywords",
+      "target_keywords": [
+        "color match",
+        "color game",
+        "puzzle game",
+        "casual game"
+      ],
+      "rationale": "Compete for top keywords with established reputation"
+    }
+  },
+  "monitoring": {
+    "tools": [
+      "App Store Connect Search Ads",
+      "Google Play Console Search Terms",
+      "Sensor Tower",
+      "App Annie (data.ai)",
+      "Mobile Action"
+    ],
+    "kpis": [
+      "Keyword ranking position",
+      "Impressions per keyword",
+      "Conversion rate by keyword",
+      "Organic downloads",
+      "Competitor keyword overlap"
+    ],
+    "update_frequency": "Monthly keyword optimization"
+  },
+  "apple_search_ads_keywords": {
+    "exact_match": [
+      "color match",
+      "color game",
+      "puzzle game",
+      "color matching puzzle"
+    ],
+    "broad_match": [
+      "casual game",
+      "arcade game",
+      "reflex game",
+      "brain game"
+    ],
+    "discovery_campaign": [
+      "color switch alternative",
+      "ballz alternative",
+      "addictive puzzle",
+      "quick game"
+    ]
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "app_info": {
+    "app_name": "ColorDrop",
+    "package_name": "com.szrgame.colordrop",
+    "default_language": "en-US",
+    "version_name": "1.0.0",
+    "version_code": 1
+  },
+  "app_type": {
+    "type": "Game",
+    "free_or_paid": "Free"
+  },
+  "store_listing": {
+    "app_name": "ColorDrop - Color Match Game",
+    "short_description": "Fast-paced color matching puzzle game. Match drops and beat your high score!",
+    "full_description": "🎯 Match the Colors, Beat the Clock!\n\nColorDrop is the ultimate color-matching puzzle game that will test your reflexes and keep you coming back for more! Watch vibrant colored balls fall from the sky and tap the matching color to score points. Easy to pick up, impossible to put down!\n\nHOW TO PLAY 🎮\nMatch falling colored balls with the correct color bar at the bottom of the screen. Each correct match increases your score and speeds up the game. But be careful - wrong matches cost you lives! How long can you survive?\n\nFEATURES ✨\n▸ Simple one-tap gameplay - anyone can play!\n▸ Beautiful, colorful graphics\n▸ Smooth animations and satisfying effects\n▸ Progressive difficulty - starts easy, gets challenging\n▸ Global leaderboards - compete with players worldwide\n▸ Daily, weekly, and monthly rankings\n▸ 20+ achievements to unlock\n▸ Multiple exciting game modes\n▸ Powerful power-ups to boost your gameplay\n▸10+ unique skins and themes\n▸ Offline play supported - no internet required\n▸ Quick gaming sessions - perfect for breaks\n▸ Free to play with optional purchases\n\nCUSTOMIZATION 🎨\nPersonalize your gaming experience with:\n• Unique ball skins\n• Color themes\n• Unlock rewards as you progress\n\nCOMPETE & ACHIEVE 🏆\n• Climb the global leaderboards\n• Unlock 20+ achievements\n• Track your personal statistics\n• Share your best scores with friends\n• Challenge yourself daily\n\nGAME MODES 🎯\n• CLASSIC: Traditional color matching\n• TIME ATTACK: Beat the clock!\n• ENDLESS: Survive as long as you can\n• DAILY CHALLENGE: New challenge every day\n\nPOWER-UPS 💎\nBoost your gameplay with special power-ups:\n• Slow Motion - Slow down time when you need it\n• Shield - Protect yourself from mistakes\n• Freeze - Stop balls in mid-air\n• Score Multiplier - Double your points\n\nPERFECT FOR 👥\n✓ Quick coffee break entertainment\n✓ Commute gaming\n✓ Improving reaction time and hand-eye coordination\n✓ Casual gamers and puzzle fans\n✓ Players of all ages (rated 3+)\n✓ Anyone who loves addictive, simple games\n\nAD-FREE OPTION 🚫\nEnjoy uninterrupted gaming! Purchase our ad-free version for a one-time fee.\n\nSUPPORT 💬\nQuestions? Feedback? We'd love to hear from you!\nEmail: support@szrgame.com\n\nDownload ColorDrop now and start your color-matching adventure! Can you beat the high score? 🌟\n\nNote: This game contains optional in-app purchases and ads. Ads can be removed with a one-time purchase."
+  },
+  "categorization": {
+    "category": "Games",
+    "subcategory": "Puzzle",
+    "tags": [
+      "casual",
+      "color",
+      "match",
+      "puzzle",
+      "arcade",
+      "reflex",
+      "brain",
+      "quick",
+      "addictive",
+      "fun"
+    ]
+  },
+  "contact_details": {
+    "email": "support@szrgame.com",
+    "website": "https://github.com/szrshine/ColorDrop",
+    "phone": null
+  },
+  "store_settings": {
+    "contains_ads": true,
+    "in_app_purchases": true,
+    "app_category_declaration": "Game"
+  },
+  "graphics_requirements": {
+    "app_icon": {
+      "size": "512x512",
+      "format": "32-bit PNG with alpha",
+      "max_size": "1024 KB"
+    },
+    "feature_graphic": {
+      "size": "1024x500",
+      "format": "JPEG or 24-bit PNG (no alpha)",
+      "required": true,
+      "note": "Very important - appears at top of store listing"
+    },
+    "phone_screenshots": {
+      "min_count": 2,
+      "max_count": 8,
+      "format": "JPEG or 24-bit PNG",
+      "min_dimension": "320px",
+      "max_dimension": "3840px",
+      "aspect_ratio": "16:9 to 2:1"
+    },
+    "tablet_7inch_screenshots": {
+      "optional": true,
+      "requirements": "Same as phone"
+    },
+    "tablet_10inch_screenshots": {
+      "optional": true,
+      "requirements": "Same as phone"
+    },
+    "promo_video": {
+      "optional": true,
+      "platform": "YouTube",
+      "max_duration": "2 minutes"
+    }
+  },
+  "content_rating": {
+    "rating_system": "IARC",
+    "violence": "None",
+    "sexual_content": "None",
+    "profanity": "None",
+    "controlled_substances": "None",
+    "gambling": "None",
+    "user_interaction": true,
+    "shares_location": false,
+    "shares_personal_info": false,
+    "contains_ads": true,
+    "expected_rating": {
+      "PEGI": "3",
+      "ESRB": "Everyone",
+      "USK": "0"
+    }
+  },
+  "data_safety": {
+    "collects_data": true,
+    "data_types": [
+      "Device or other IDs",
+      "App activity"
+    ],
+    "encrypted_in_transit": true,
+    "users_can_request_deletion": true,
+    "data_usage": [
+      "Analytics",
+      "Advertising"
+    ],
+    "data_sharing": [
+      "AdMob",
+      "Firebase Analytics"
+    ]
+  },
+  "privacy_policy": {
+    "url": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/privacy-policy.md"
+  },
+  "target_audience": {
+    "age": "3 and older",
+    "audience": "General"
+  },
+  "app_access": {
+    "login_required": false,
+    "special_access_instructions": null
+  },
+  "in_app_products": [
+    {
+      "product_id": "colordrop.removeads",
+      "name": "Remove Ads",
+      "description": "Remove all banner and interstitial ads. Enjoy uninterrupted gameplay!",
+      "price": "$2.99",
+      "type": "non-consumable"
+    },
+    {
+      "product_id": "colordrop.premiumskins",
+      "name": "Premium Skin Pack",
+      "description": "Unlock 10 exclusive premium ball skins and 5 unique background themes!",
+      "price": "$1.99",
+      "type": "non-consumable"
+    },
+    {
+      "product_id": "colordrop.powerups.5",
+      "name": "Power-Up Pack (5x)",
+      "description": "Get 5 of each power-up: Slow Motion, Shield, and Freeze!",
+      "price": "$0.99",
+      "type": "consumable"
+    },
+    {
+      "product_id": "colordrop.coins.small",
+      "name": "Coin Pack - Small",
+      "description": "100 coins to spend on skins and power-ups!",
+      "price": "$0.99",
+      "type": "consumable"
+    },
+    {
+      "product_id": "colordrop.coins.medium",
+      "name": "Coin Pack - Medium",
+      "description": "600 coins - Best value!",
+      "price": "$4.99",
+      "type": "consumable"
+    },
+    {
+      "product_id": "colordrop.coins.large",
+      "name": "Coin Pack - Large",
+      "description": "1500 coins - Premium pack!",
+      "price": "$9.99",
+      "type": "consumable"
+    }
+  ],
+  "screenshot_plan": [
+    {
+      "number": 1,
+      "overlay_text": "Welcome to ColorDrop!",
+      "content": "Main Menu with vibrant colors"
+    },
+    {
+      "number": 2,
+      "overlay_text": "Match Falling Colors",
+      "content": "Active gameplay with multiple balls"
+    },
+    {
+      "number": 3,
+      "overlay_text": "Build Epic Combos",
+      "content": "Combo streak animation"
+    },
+    {
+      "number": 4,
+      "overlay_text": "Compete Worldwide",
+      "content": "Global leaderboard"
+    },
+    {
+      "number": 5,
+      "overlay_text": "Unlock Achievements",
+      "content": "Achievement list"
+    },
+    {
+      "number": 6,
+      "overlay_text": "Power Up Your Game",
+      "content": "Power-ups screen"
+    },
+    {
+      "number": 7,
+      "overlay_text": "Customize Everything",
+      "content": "Skins and themes"
+    },
+    {
+      "number": 8,
+      "overlay_text": "Beat the High Score!",
+      "content": "Game Over with statistics"
+    }
+  ],
+  "feature_graphic_design": {
+    "background": "Colorful gradient (blue to purple)",
+    "main_text": "ColorDrop",
+    "main_text_style": "Large, bold, white font with shadow",
+    "subtext": "Match Colors, Beat Your Score!",
+    "graphics": "Falling colored balls with motion blur",
+    "call_to_action": "Download Free",
+    "color_scheme": [
+      "#4A90E2",
+      "#9B59B6",
+      "#E74C3C",
+      "#F39C12",
+      "#2ECC71"
+    ]
+  }
+}
