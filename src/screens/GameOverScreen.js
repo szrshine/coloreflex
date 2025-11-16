@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { shareScore } from '../services/sharing';
 
 /**
  * GameOverScreen - Oyun bitti ekranı
@@ -22,6 +23,18 @@ const GameOverScreen = ({
   // Components
   SettingsModal,
 }) => {
+  // Paylaşma fonksiyonu
+  const handleShare = async () => {
+    try {
+      onTriggerHaptic('light');
+      const result = await shareScore(score, highScore);
+      if (result.success) {
+        onTriggerHaptic('success');
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+    }
+  };
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -85,6 +98,13 @@ const GameOverScreen = ({
 
           <TouchableOpacity style={styles.restartButton} onPress={onStartGame}>
             <Text style={styles.restartButtonText}>🔄 Tekrar Oyna</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareButtonText}>📤 Skorumu Paylaş</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -256,6 +276,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   restartButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    marginBottom: 15,
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+  },
+  shareButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',

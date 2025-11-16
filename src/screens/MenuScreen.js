@@ -105,6 +105,16 @@ const MenuScreen = ({
               style={styles.menuSecondaryButton}
               onPress={() => {
                 onTriggerHaptic('light');
+                onNavigate('leaderboard');
+              }}
+            >
+              <Text style={styles.menuSecondaryButtonText}>🎖️ Liderlik Tablosu</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuSecondaryButton}
+              onPress={() => {
+                onTriggerHaptic('light');
                 onNavigate('dailyTasks');
               }}
             >

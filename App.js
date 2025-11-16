@@ -53,6 +53,7 @@ import PowerupsScreen from './src/screens/PowerupsScreen';
 import AchievementsScreen from './src/screens/AchievementsScreen';
 import DailyTasksScreen from './src/screens/DailyTasksScreen';
 import StoreScreen from './src/screens/StoreScreen';
+import LeaderboardScreen from './src/screens/LeaderboardScreen';
 
 // Game Components
 import Ball from './src/components/game/Ball';
@@ -65,10 +66,13 @@ import SettingsModal from './src/components/ui/SettingsModal';
 import useGameState from './src/hooks/useGameState';
 import useGameLogic from './src/hooks/useGameLogic';
 
+// Services
+import { submitScore } from './src/services/leaderboard';
+
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
-  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats, store, dailyTasks
+  const [gameState, setGameState] = useState('menu'); // menu, playing, gameOver, tutorial, achievements, stats, store, dailyTasks, leaderboard
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [balls, setBalls] = useState([]);
@@ -107,6 +111,9 @@ export default function App() {
   const [lastLoginDate, setLastLoginDate] = useState('');
   const [dailyTasks, setDailyTasks] = useState([]);
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
+  // Leaderboard state'leri
+  const [userName, setUserName] = useState('');
 
   // Monetizasyon state'leri
   const [coins, setCoins] = useState(0);
@@ -1457,6 +1464,12 @@ export default function App() {
     // Coin kazandır (puana göre)
     await addCoins(score);
 
+    // Skoru leaderboard'a gönder
+    await submitScore(score, 'all');
+    await submitScore(score, 'daily');
+    await submitScore(score, 'weekly');
+    await submitScore(score, 'monthly');
+
     // Interstitial reklam göster (her 3-4 oyunda bir, reklamsız değilse)
     const newGamesCount = gamesPlayedSinceAd + 1;
     setGamesPlayedSinceAd(newGamesCount);
@@ -1581,6 +1594,19 @@ export default function App() {
         dailyTasks={dailyTasks}
         onNavigateMenu={() => setGameState('menu')}
         onTriggerHaptic={triggerHaptic}
+      />
+    );
+  }
+
+  // Liderlik Tablosu ekranı
+  if (gameState === 'leaderboard') {
+    return (
+      <LeaderboardScreen
+        onNavigateMenu={() => setGameState('menu')}
+        onTriggerHaptic={triggerHaptic}
+        userScore={highScore}
+        userName={userName}
+        onSaveUserName={setUserName}
       />
     );
   }
