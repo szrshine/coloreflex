@@ -140,7 +140,7 @@ const SettingsModal = ({
             <View style={styles.settingsSection}>
               <Text style={styles.sectionTitle}>ℹ️ Hakkında</Text>
               <View style={styles.aboutSection}>
-                <Text style={styles.aboutText}>ColorDrop v1.0.0</Text>
+                <Text style={styles.aboutText}>coloreflex v1.0.0</Text>
                 <Text style={styles.aboutText}>SZR Game Studios</Text>
                 <Text style={styles.aboutTextSmall}>Renkli topları eşleştir, rekoru kır!</Text>
               </View>

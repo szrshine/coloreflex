@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.szrgame.colordrop",
+      "bundleIdentifier": "com.szrgame.coloreflex",
       "buildNumber": "1",
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~1458002511"
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.szrgame.colordrop",
+      "package": "com.szrgame.coloreflex",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "config": {
@@ -49,11 +49,11 @@
       "category": "Games",
       "subCategory": "Puzzle",
       "ageRating": "3+",
-      "privacyPolicyUrl": "https://szrshine.github.io/ColorDrop/privacy-policy.html",
-      "termsOfServiceUrl": "https://szrshine.github.io/ColorDrop/terms-of-service.html",
+      "privacyPolicyUrl": "https://szrshine.github.io/coloreflex/privacy-policy.html",
+      "termsOfServiceUrl": "https://szrshine.github.io/coloreflex/terms-of-service.html",
       "supportEmail": "coloreflex@gmail.com",
       "developerName": "SZR Game Studios",
-      "developerWebsite": "https://github.com/szrshine/ColorDrop"
+      "developerWebsite": "https://github.com/szrshine/coloreflex"
     }
   }
 }

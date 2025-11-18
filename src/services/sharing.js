@@ -25,8 +25,8 @@ import { Share, Platform } from 'react-native';
  * Store linkleri
  */
 const STORE_LINKS = {
-  ios: 'https://apps.apple.com/app/colordrop/id123456789', // TODO: Gerçek App Store linki ekle
-  android: 'https://play.google.com/store/apps/details?id=com.szrgame.colordrop', // TODO: Gerçek Play Store linki ekle
+  ios: 'https://apps.apple.com/app/coloreflex/id123456789', // TODO: Gerçek App Store linki ekle
+  android: 'https://play.google.com/store/apps/details?id=com.szrgame.coloreflex', // TODO: Gerçek Play Store linki ekle
 };
 
 /**
@@ -39,7 +39,7 @@ export const shareScore = async (score, highScore = null) => {
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    let message = `🎨 ColorDrop'ta ${score} puan yaptım! 🎯\n\n`;
+    let message = `🎨 coloreflex'te ${score} puan yaptım! 🎯\n\n`;
 
     if (highScore && score >= highScore) {
       message += `🏆 Yeni rekor! En yüksek skorumu kırdım!\n\n`;
@@ -51,7 +51,7 @@ export const shareScore = async (score, highScore = null) => {
     const result = await Share.share({
       message,
       url: storeLink, // iOS için
-      title: 'ColorDrop - Skorumu Gör!',
+      title: 'coloreflex - Skorumu Gör!',
     });
 
     if (result.action === Share.sharedAction) {
@@ -84,7 +84,7 @@ export const shareAchievement = async (achievementName, achievementDescription) 
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    const message = `🏆 ColorDrop'ta "${achievementName}" başarımını açtım!\n\n` +
+    const message = `🏆 coloreflex'te "${achievementName}" başarımını açtım!\n\n` +
       `${achievementDescription}\n\n` +
       `Sen de dene!\n` +
       `İndir: ${storeLink}`;
@@ -92,7 +92,7 @@ export const shareAchievement = async (achievementName, achievementDescription) 
     const result = await Share.share({
       message,
       url: storeLink,
-      title: 'ColorDrop - Başarım Açıldı!',
+      title: 'coloreflex - Başarım Açıldı!',
     });
 
     return result.action === Share.sharedAction
@@ -114,7 +114,7 @@ export const shareLeaderboardRank = async (rank, score) => {
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    let message = `🎖️ ColorDrop liderlik tablosunda ${rank}. sıradayım!\n\n` +
+    let message = `🎖️ coloreflex liderlik tablosunda ${rank}. sıradayım!\n\n` +
       `Skorum: ${score} 🎯\n\n`;
 
     if (rank <= 10) {
@@ -129,7 +129,7 @@ export const shareLeaderboardRank = async (rank, score) => {
     const result = await Share.share({
       message,
       url: storeLink,
-      title: 'ColorDrop - Liderlik Tablosu',
+      title: 'coloreflex - Liderlik Tablosu',
     });
 
     return result.action === Share.sharedAction
@@ -148,14 +148,14 @@ export const shareApp = async () => {
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    const message = `🎨 ColorDrop - Eğlenceli bir renk eşleştirme oyunu! 🎯\n\n` +
+    const message = `🎨 coloreflex - Eğlenceli bir renk eşleştirme oyunu! 🎯\n\n` +
       `Topları doğru renklere yönlendir, en yüksek skoru yap!\n\n` +
       `Ücretsiz indir: ${storeLink}`;
 
     const result = await Share.share({
       message,
       url: storeLink,
-      title: 'ColorDrop - Renk Eşleştirme Oyunu',
+      title: 'coloreflex - Renk Eşleştirme Oyunu',
     });
 
     return result.action === Share.sharedAction
@@ -183,7 +183,7 @@ export const shareScreenshot = async (uri) => {
     //
     // await Sharing.shareAsync(uri, {
     //   mimeType: 'image/png',
-    //   dialogTitle: 'ColorDrop Skorumu Paylaş',
+    //   dialogTitle: 'coloreflex Skorumu Paylaş',
     // });
     //
     // return { success: true };
@@ -205,7 +205,7 @@ export const shareToWhatsApp = async (score) => {
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    const message = `🎨 ColorDrop'ta ${score} puan yaptım! 🎯 Sen de dene: ${storeLink}`;
+    const message = `🎨 coloreflex'te ${score} puan yaptım! 🎯 Sen de dene: ${storeLink}`;
 
     // WhatsApp URL scheme
     const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
@@ -235,7 +235,7 @@ export const shareToTwitter = async (score) => {
   try {
     const storeLink = Platform.OS === 'ios' ? STORE_LINKS.ios : STORE_LINKS.android;
 
-    const message = `🎨 ColorDrop'ta ${score} puan yaptım! 🎯 #ColorDrop #MobileGame`;
+    const message = `🎨 coloreflex'te ${score} puan yaptım! 🎯 #coloreflex #MobileGame`;
 
     const result = await Share.share({
       message: `${message}\n${storeLink}`,

@@ -56,7 +56,7 @@ const MenuScreen = ({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.menuContainer}>
-          <Text style={styles.title}>🎨 ColorDrop</Text>
+          <Text style={styles.title}>🎨 coloreflex</Text>
           <Text style={styles.subtitle}>Topları doğru renge yönlendir!</Text>
 
           <View style={styles.highScoreContainer}>
