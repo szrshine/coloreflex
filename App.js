@@ -15,6 +15,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
+import { initializeCrashReporting } from './src/services/crashReporting';
 import * as Haptics from 'expo-haptics';
 import {
   initializeAdMob,
@@ -158,6 +159,9 @@ export default function App() {
 
   // İlk yükleme - yüksek skor ve ayarları yükle
   useEffect(() => {
+    // Sentry'yi başlat
+    initializeCrashReporting();
+
     loadHighScore();
     loadSettings();
     loadStats();

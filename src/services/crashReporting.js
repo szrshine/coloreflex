@@ -14,10 +14,10 @@
  * 5. Bu dosyadaki yorumları kaldır ve DSN'i güncelle
  */
 
-// import * as Sentry from '@sentry/react-native';
+import * as Sentry from '@sentry/react-native';
 
-// Sentry DSN (Production'da gerçek DSN kullanılmalı)
-const SENTRY_DSN = 'https://YOUR_SENTRY_DSN@sentry.io/YOUR_PROJECT_ID';
+// Sentry DSN
+const SENTRY_DSN = 'https://d2cf84f06a1553c571f6bde68c2b4246@o4510385567236096.ingest.de.sentry.io/4510385577001040';
 
 // Development modunda mı?
 const __DEV__ = process.env.NODE_ENV !== 'production';
@@ -31,11 +31,10 @@ export const initializeCrashReporting = () => {
     return;
   }
 
-  // Production'da Sentry'yi aktif et
-  /*
+  // Sentry'yi başlat
   Sentry.init({
     dsn: SENTRY_DSN,
-    debug: false, // Production'da false olmalı
+    debug: __DEV__, // Development'ta debug açık
     environment: __DEV__ ? 'development' : 'production',
     tracesSampleRate: 1.0, // Performance monitoring için
     enableAutoSessionTracking: true,
@@ -51,7 +50,6 @@ export const initializeCrashReporting = () => {
   });
 
   console.log('[CrashReporting] Sentry başlatıldı');
-  */
 };
 
 /**
@@ -66,12 +64,10 @@ export const logError = (error, context = {}) => {
     return;
   }
 
-  // Production'da Sentry'ye gönder
-  /*
+  // Sentry'ye gönder
   Sentry.captureException(error, {
     extra: context,
   });
-  */
 };
 
 /**
@@ -86,13 +82,11 @@ export const logMessage = (message, level = 'info', context = {}) => {
     return;
   }
 
-  // Production'da Sentry'ye gönder
-  /*
+  // Sentry'ye gönder
   Sentry.captureMessage(message, {
     level,
     extra: context,
   });
-  */
 };
 
 /**
@@ -105,13 +99,11 @@ export const setUser = (user) => {
     return;
   }
 
-  /*
   Sentry.setUser({
     id: user.id,
     username: user.username,
     // Email ve IP eklemeyin (privacy)
   });
-  */
 };
 
 /**
@@ -123,7 +115,7 @@ export const clearUser = () => {
     return;
   }
 
-  // Sentry.setUser(null);
+  Sentry.setUser(null);
 };
 
 /**
@@ -138,14 +130,12 @@ export const addBreadcrumb = (message, category = 'custom', data = {}) => {
     return;
   }
 
-  /*
   Sentry.addBreadcrumb({
     message,
     category,
     level: 'info',
     data,
   });
-  */
 };
 
 /**
@@ -184,12 +174,8 @@ export const startTransaction = (name) => {
     };
   }
 
-  /*
   const transaction = Sentry.startTransaction({ name });
   return transaction;
-  */
-
-  return { finish: () => {} };
 };
 
 export default {
