@@ -16,7 +16,7 @@
  * 5. Bu dosyadaki yorumları kaldır
  */
 
-// import analytics from '@react-native-firebase/analytics';
+import analytics from '@react-native-firebase/analytics';
 
 // Development modunda mı?
 const __DEV__ = process.env.NODE_ENV !== 'production';
@@ -58,7 +58,7 @@ export const logEvent = async (eventName, params = {}) => {
     return;
   }
 
-  // await analytics().logEvent(eventName, params);
+  await analytics().logEvent(eventName, params);
 };
 
 /**
@@ -72,7 +72,7 @@ export const setUserProperty = async (name, value) => {
     return;
   }
 
-  // await analytics().setUserProperty(name, value);
+  await analytics().setUserProperty(name, value);
 };
 
 /**
@@ -85,7 +85,7 @@ export const setUserId = async (userId) => {
     return;
   }
 
-  // await analytics().setUserId(userId);
+  await analytics().setUserId(userId);
 };
 
 // ========================================

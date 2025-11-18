@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "668819233152",
+    "project_id": "coloreflex-c7a04",
+    "storage_bucket": "coloreflex-c7a04.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:668819233152:android:1464abb82f2ca7b00f0965",
+        "android_client_info": {
+          "package_name": "com.szrgame.coloreflex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdlx97adwQ1LS-lMBwzmdTRkI8tk_jRsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
