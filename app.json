@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "ColorDrop",
-    "slug": "ColorDrop",
+    "name": "coloreflex",
+    "slug": "coloreflex",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "description": "Fast-paced color matching puzzle game. Match falling drops with their colors and beat your high score!",
+    "description": "Fast-paced color matching reflex game. Match falling drops with their colors and beat your high score!",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -49,9 +49,9 @@
       "category": "Games",
       "subCategory": "Puzzle",
       "ageRating": "3+",
-      "privacyPolicyUrl": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/privacy-policy.md",
-      "termsOfServiceUrl": "https://github.com/szrshine/ColorDrop/blob/main/assets/legal/terms-of-service.md",
-      "supportEmail": "support@szrgame.com",
+      "privacyPolicyUrl": "https://szrshine.github.io/ColorDrop/privacy-policy.html",
+      "termsOfServiceUrl": "https://szrshine.github.io/ColorDrop/terms-of-service.html",
+      "supportEmail": "coloreflex@gmail.com",
       "developerName": "SZR Game Studios",
       "developerWebsite": "https://github.com/szrshine/ColorDrop"
     }
