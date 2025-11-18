@@ -1,10 +1,59 @@
-# ColorDrop - Tam Hazırlıklı Yayın Checklist
+# coloreflex - Tam Hazırlıklı Yayın Checklist
 
 ## 📋 Genel Bakış
 
-Bu checklist, ColorDrop oyununun App Store ve Google Play'e tam özelliklerle yayınlanması için gereken **tüm adımları** içerir. Hiçbir şey eksik kalmadan, profesyonel ve kullanıcı dostu bir oyun yayınlayacaksınız.
+Bu checklist, **coloreflex** oyununun App Store ve Google Play'e tam özelliklerle yayınlanması için gereken **tüm adımları** içerir. Hiçbir şey eksik kalmadan, profesyonel ve kullanıcı dostu bir oyun yayınlayacaksınız.
 
 **Tahmini Süre:** 10-14 gün (tam zamanlı çalışma)
+
+---
+
+## ✅ TAMAMLANAN KRİTİK ADIMLAR (Oturum 1 - 2025-11-18)
+
+### 🎯 4 Kritik Temel Adım Tamamlandı:
+
+#### 1. ✅ Privacy Policy ve Terms of Service - GitHub Pages
+- **GitHub Pages:** https://szrshine.github.io/coloreflex/
+- **Privacy Policy:** https://szrshine.github.io/coloreflex/privacy-policy.html
+- **Terms of Service:** https://szrshine.github.io/coloreflex/terms-of-service.html
+- Tüm URL'ler çalışıyor ve `app.json` içinde tanımlandı
+- Store yayınına hazır
+
+#### 2. ✅ Support Email Adresi
+- **Email:** coloreflex@gmail.com
+- `app.json` içinde tanımlandı
+- Yasal belgelerde kullanıldı
+- Store listelerinde kullanılmaya hazır
+
+#### 3. ✅ Sentry - Crash Reporting
+- **DSN:** Yapılandırıldı ve güvende saklandı
+- `src/services/crashReporting.js` tamamen aktif
+- `App.js` içinde başlatılıyor
+- Development modunda console log, production'da Sentry'ye raporlama
+- Package yüklendi: `@sentry/react-native`
+
+#### 4. ✅ Firebase - Analytics ve Leaderboard Altyapısı
+- **Firebase Projesi:** coloreflex-c7a04
+- **Paketler:** `@react-native-firebase/app`, `analytics`, `firestore` yüklendi
+- **Config Dosyaları:**
+  - iOS: `ios/GoogleService-Info.plist` ✅
+  - Android: `android/app/google-services.json` ✅
+- `app.json` içinde Firebase plugin tanımlandı
+- `src/services/analytics.js` aktif (development'ta mock, production'da gerçek)
+- Leaderboard altyapısı hazır, Firebase bağlantısı ileride yapılacak
+
+#### 🎨 Bonus: Tam Rebranding
+- Oyun adı: **ColorDrop** → **coloreflex**
+- Bundle ID: `com.szrgame.coloreflex` (iOS & Android)
+- GitHub Repository: `szrshine/coloreflex`
+- Tüm kaynak kodda güncelleme yapıldı
+- Yasal belgeler, paylaşım mesajları, store bilgileri güncellendi
+
+### 📝 Sonraki Oturum İçin Notlar:
+- Firebase entegrasyonu tamamlandı, prebuild ve oyun içi event entegrasyonu ileride yapılacak
+- Sentry ve Analytics servisler hazır, oyun akışına entegre edilmeyi bekliyor
+- Store'lara gönderim öncesi tüm teknik altyapı hazır
+- Kalan fazlar (3-11) sırasıyla tamamlanabilir
 
 ---
 
@@ -33,28 +82,29 @@ Bu checklist, ColorDrop oyununun App Store ve Google Play'e tam özelliklerle ya
 
 ---
 
-## 📜 FAZ 2: YASAL GEREKSİNİMLER (1 Gün)
+## 📜 FAZ 2: YASAL GEREKSİNİMLER (1 Gün) ✅ TAMAMLANDI
 
 ### 2.1 Gizlilik Politikası (Privacy Policy)
 - [x] Privacy Policy metni mevcut: `assets/legal/privacy-policy.md` ✅
-- [ ] GitHub Pages veya web sitesinde yayınla
-- [ ] URL'i test et (erişilebilir mi?)
-- [ ] URL'i `app.json` içine ekle
-- [ ] Oyun içinden Privacy Policy'e link ekle (Ayarlar menüsü)
+- [x] GitHub Pages'da yayınlandı: https://szrshine.github.io/coloreflex/privacy-policy.html ✅
+- [x] URL'i test edildi (erişilebilir) ✅
+- [x] URL'i `app.json` içine eklendi ✅
+- [ ] Oyun içinden Privacy Policy'e link ekle (Ayarlar menüsü) - İleride eklenecek
 
 ### 2.2 Kullanım Şartları (Terms of Service)
 - [x] Terms of Service metni mevcut: `assets/legal/terms-of-service.md` ✅
-- [ ] GitHub Pages veya web sitesinde yayınla
-- [ ] URL'i test et (erişilebilir mi?)
-- [ ] Oyun içinden Terms'e link ekle (Ayarlar menüsü)
+- [x] GitHub Pages'da yayınlandı: https://szrshine.github.io/coloreflex/terms-of-service.html ✅
+- [x] URL'i test edildi (erişilebilir) ✅
+- [x] URL'i `app.json` içine eklendi ✅
+- [ ] Oyun içinden Terms'e link ekle (Ayarlar menüsü) - İleride eklenecek
 
 ### 2.3 İletişim ve Destek
-- [ ] Destek email adresi oluştur (support@szrgame.com veya kişisel)
-- [ ] Email adresini `app.json` ve Store listelerinde kullan
-- [ ] Ayarlar menüsünde "İletişim/Destek" butonu ekle
-- [ ] Email tıklandığında mail app açılsın (`Linking.openURL`)
+- [x] Destek email adresi oluşturuldu: coloreflex@gmail.com ✅
+- [x] Email adresi `app.json` içinde tanımlandı ✅
+- [ ] Ayarlar menüsünde "İletişim/Destek" butonu ekle - İleride eklenecek
+- [ ] Email tıklandığında mail app açılsın (`Linking.openURL`) - İleride eklenecek
 
-**Zaman:** 4 saat
+**Zaman:** 4 saat | **Durum:** ✅ Temel kurulum tamamlandı (oyun içi bağlantılar ileride eklenecek)
 
 ---
 
@@ -239,43 +289,45 @@ Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
 ## 🌐 FAZ 5: SOSYAL VE REKABET (2 Gün)
 
-### 5.1 Liderlik Tablosu (Leaderboard)
+### 5.1 Liderlik Tablosu (Leaderboard) - HAZIR (Firebase bağlantısı ileride)
 - [x] Leaderboard UI mevcut: `src/screens/LeaderboardScreen.js` ✅
 - [x] Leaderboard servisi mevcut: `src/services/leaderboard.js` ✅
-- [ ] **Firebase Firestore kurulumu:**
-  - [ ] Firebase projesi oluştur (console.firebase.google.com)
-  - [ ] Android uygulaması ekle
-  - [ ] `google-services.json` indir → `android/app/` klasörüne kopyala
-  - [ ] iOS uygulaması ekle
-  - [ ] `GoogleService-Info.plist` indir → `ios/` klasörüne kopyala
-  - [ ] Paketleri yükle: `npm install @react-native-firebase/app @react-native-firebase/firestore`
-  - [ ] `app.json` içine Firebase plugin ekle
-  - [ ] `npx expo prebuild` komutu çalıştır
-- [ ] **Firestore Rules ayarla:**
+- [x] **Firebase Firestore kurulumu:** ✅
+  - [x] Firebase projesi oluşturuldu: coloreflex-c7a04 ✅
+  - [x] Android uygulaması eklendi ✅
+  - [x] `google-services.json` indirildi → `android/app/` klasörüne kopyalandı ✅
+  - [x] iOS uygulaması eklendi ✅
+  - [x] `GoogleService-Info.plist` indirildi → `ios/` klasörüne kopyalandı ✅
+  - [x] Paketler yüklendi: `@react-native-firebase/app @react-native-firebase/firestore` ✅
+  - [x] `app.json` içine Firebase plugin eklendi ✅
+  - [ ] `npx expo prebuild` komutu çalıştır - Build öncesi yapılacak
+- [ ] **Firestore Rules ayarla:** - İleride yapılacak
   - [ ] Firebase Console > Firestore Database > Rules
   - [ ] Leaderboard collection için read: public, write: authenticated
   - [ ] Rules'ı yayınla
-- [ ] **Leaderboard servisini Firebase'e bağla:**
+- [ ] **Leaderboard servisini Firebase'e bağla:** - İleride yapılacak
   - [ ] `src/services/leaderboard.js` içindeki Firebase kodlarını aktif et
   - [ ] Mock data fonksiyonunu kaldır
   - [ ] `seedMockData()` çağrısını tamamen SİL
   - [ ] `submitScore()` fonksiyonu Firebase'e skor gönderiyor
   - [ ] `getLeaderboard()` fonksiyonu Firebase'den skorları çekiyor
   - [ ] Offline cache çalışıyor (AsyncStorage fallback)
-- [ ] **Firebase Authentication (opsiyonel ama önerilen):**
+- [ ] **Firebase Authentication (opsiyonel ama önerilen):** - İleride yapılacak
   - [ ] `npm install @react-native-firebase/auth` yükle
   - [ ] Anonim authentication aktif et
   - [ ] `getUserId()` fonksiyonu Firebase Auth UID döndürüyor
-- [ ] **Cloud Functions (opsiyonel):**
+- [ ] **Cloud Functions (opsiyonel):** - İleride yapılacak
   - [ ] `firebase-tools` yükle: `npm install -g firebase-tools`
   - [ ] `firebase init functions` komutu çalıştır
   - [ ] Günlük/haftalık/aylık leaderboard reset fonksiyonları oluştur
   - [ ] `firebase deploy --only functions` ile deploy et
-- [ ] **Test:**
+- [ ] **Test:** - İleride yapılacak
   - [ ] Skor gönder, Firebase Console'da görünüyor mu?
   - [ ] Leaderboard'u çek, veriler geliyor mu?
   - [ ] Offline modda cache çalışıyor mu?
   - [ ] Birden fazla cihazdan test et
+
+**Durum:** ✅ Firebase altyapısı hazır, leaderboard kodu Firebase'e bağlanmayı bekliyor
 
 ### 5.2 Arkadaşlarla Paylaşma
 - [x] Sharing servisi mevcut: `src/services/sharing.js` ✅
@@ -298,38 +350,39 @@ Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
 ---
 
-## 📊 FAZ 6: ANALYTİCS VE CRASH REPORTİNG (1 Gün)
+## 📊 FAZ 6: ANALYTİCS VE CRASH REPORTİNG (1 Gün) ✅ TAMAMLANDI
 
-### 6.1 Sentry Kurulumu (Crash Reporting)
-- [ ] Sentry hesabı oluştur: https://sentry.io/
-- [ ] Yeni proje oluştur (React Native)
-- [ ] DSN (Data Source Name) kopyala
-- [ ] Terminal'de yükle:
+### 6.1 Sentry Kurulumu (Crash Reporting) ✅
+- [x] Sentry hesabı oluşturuldu: https://sentry.io/ ✅
+- [x] Yeni proje oluşturuldu (React Native - coloreflex) ✅
+- [x] DSN (Data Source Name) kopyalandı ✅
+- [x] Terminal'de yüklendi:
   ```bash
   npm install @sentry/react-native
   npx @sentry/wizard -i reactNative -p ios android
   ```
-- [ ] `src/services/crashReporting.js` güncelle:
-  - [ ] `SENTRY_DSN` değişkenini gerçek DSN ile değiştir
-  - [ ] `__DEV__` kontrolü kaldır (production'da aktif olmalı)
-  - [ ] Mock Sentry kodlarını kaldır
-- [ ] `App.js` içinde Sentry'yi initialize et
-- [ ] Error Boundary ekle (tüm uygulamayı saran)
-- [ ] Test crash gönder:
-  ```javascript
-  import { testCrash } from './src/services/crashReporting';
-  testCrash(); // Development modunda test et
-  ```
-- [ ] Sentry Dashboard'da crash göründü mü kontrol et
+- [x] `src/services/crashReporting.js` güncellendi: ✅
+  - [x] `SENTRY_DSN` gerçek DSN ile değiştirildi ✅
+  - [x] Production modunda aktif (development'ta mock kullanıyor) ✅
+  - [x] Tüm fonksiyonlar aktif hale getirildi ✅
+- [x] `App.js` içinde Sentry initialize edildi ✅
+- [ ] Error Boundary ekle (tüm uygulamayı saran) - İleride eklenecek
+- [ ] Test crash gönder - Production build'de test edilecek
+- [ ] Sentry Dashboard'da crash kontrolü - İleride test edilecek
 
-### 6.2 Firebase Analytics Kurulumu
-- [ ] Firebase Console > Analytics aktif et
-- [ ] Paketleri yükle: `npm install @react-native-firebase/analytics`
-- [ ] `src/services/analytics.js` güncelle:
-  - [ ] Firebase Analytics import satırlarını aktif et
-  - [ ] Mock analytics kodlarını kaldır
-  - [ ] `__DEV__` kontrolü kaldır
-- [ ] **Analytics event'lerini entegre et:**
+### 6.2 Firebase Analytics Kurulumu ✅
+- [x] Firebase projesi oluşturuldu: coloreflex-c7a04 ✅
+- [x] Firebase Console > Analytics aktif ✅
+- [x] Paketleri yüklendi: `@react-native-firebase/app`, `analytics`, `firestore` ✅
+- [x] `src/services/analytics.js` güncellendi: ✅
+  - [x] Firebase Analytics import satırları aktif edildi ✅
+  - [x] Production modunda aktif (development'ta mock kullanıyor) ✅
+  - [x] Tüm event fonksiyonları aktif ✅
+- [x] Firebase config dosyaları eklendi:
+  - [x] `ios/GoogleService-Info.plist` ✅
+  - [x] `android/app/google-services.json` ✅
+- [x] `app.json` içine Firebase plugin eklendi ✅
+- [ ] **Analytics event'lerini entegre et:** - İleride oyuna entegre edilecek
   - [ ] `app_open` - App.js useEffect içinde
   - [ ] `game_start` - Oyun başladığında
   - [ ] `game_over` - Oyun bittiğinde (skor, süre, doğru/yanlış)
@@ -337,12 +390,14 @@ Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   - [ ] `tutorial_complete` - Tutorial tamamlandığında
   - [ ] `share` - Paylaşım yapıldığında
   - [ ] `settings_change` - Ayar değiştiğinde
-- [ ] **User properties ayarla:**
+- [ ] **User properties ayarla:** - İleride oyuna entegre edilecek
   - [ ] `total_games_played`
   - [ ] `highest_score`
   - [ ] `tutorial_completed`
   - [ ] `last_login_date`
-- [ ] Test: Firebase Console > DebugView'da event'ler görünüyor mu?
+- [ ] Test: Firebase Console > DebugView'da event'ler - Production build'de test edilecek
+
+**Durum:** ✅ Altyapı kurulumu tamamlandı, oyun içi entegrasyon ileride yapılacak
 
 ### 6.3 Crash Reporting Breadcrumbs
 - [ ] Oyun akışına breadcrumb ekle:
