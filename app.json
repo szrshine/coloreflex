@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.szrgame.coloreflex",
       "buildNumber": "1",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~1458002511"
       }
@@ -29,6 +30,7 @@
       "package": "com.szrgame.coloreflex",
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713"
       }
